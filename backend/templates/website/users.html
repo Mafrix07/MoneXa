@@ -1,0 +1,19 @@
+{% extends "website/app_base.html" %}
+{% block title %}Utilisateurs — MONEXA{% endblock %}
+{% block heading %}Utilisateurs{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Équipe</h2>
+<p class="mx-lede">Membres de {{ mx_org.name|default:"votre organisation" }}. Les rôles sont appliqués côté serveur.</p>
+<div class="mx-table-wrap">
+  <table class="mx-table">
+    <thead><tr><th>Email</th><th>Rôle</th><th>Téléphone</th></tr></thead>
+    <tbody>
+    {% for m in members %}
+      <tr><td>{{ m.email }}</td><td>{{ m.get_role_display }}</td><td>{{ m.phone|default:"—" }}</td></tr>
+    {% empty %}
+      <tr><td colspan="3">Aucun utilisateur.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

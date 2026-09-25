@@ -1,0 +1,42 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Factures — MONEXA{% endblock %}
+{% block heading %}Factures{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Factures</h2>
+<div class="mx-filters">
+  <a href="{% url 'website:invoices' %}" class="{% if not status_filter %}is-on{% endif %}">Toutes</a>
+  <a href="?status=EN_ATTENTE" class="{% if status_filter == 'EN_ATTENTE' %}is-on{% endif %}">En attente</a>
+  <a href="?status=RECONCILIE" class="{% if status_filter == 'RECONCILIE' %}is-on{% endif %}">Réconciliées</a>
+  <a href="?status=ANOMALIE" class="{% if status_filter == 'ANOMALIE' %}is-on{% endif %}">Anomalies</a>
+</div>
+{% if invoices %}
+<div class="mx-table-wrap">
+  <table class="mx-table">
+    <thead><tr><th>Référence</th><th>Client</th><th class="num">Montant</th><th>Échéance</th><th class="center">Statut</th></tr></thead>
+    <tbody>
+    {% for inv in invoices %}
+      <tr>
+        <td>{{ inv.reference }}</td>
+        <td>{{ inv.client_name }}</td>
+        <td class="num">{{ inv.amount|money }}</td>
+        <td>{{ inv.due_date|date:"d/m/Y" }}</td>
+        <td class="center">{% status_badge inv.status inv.get_status_display %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="mx-mobile-cards">
+  {% for inv in invoices %}
+  <article>
+    <strong>{{ inv.reference }}</strong>
+    <div>{{ inv.client_name }} · {{ inv.amount|money }}</div>
+    {% status_badge inv.status inv.get_status_display %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="mx-empty"><h3>Aucune facture.</h3><p>Les factures émises apparaîtront ici.</p></div>
+{% endif %}
+{% endblock %}

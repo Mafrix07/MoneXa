@@ -1,0 +1,42 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Réconciliation — MONEXA{% endblock %}
+{% block heading %}Réconciliation{% endblock %}
+{% block content %}
+<h2 class="mx-h1">File à valider</h2>
+<p class="mx-lede">Chaque proposition s'appuie sur des critères mesurés. Accepter n'est pas automatique.</p>
+{% if items %}
+  {% for item in items %}
+  <article class="mx-card">
+    <div class="mx-recon">
+      <div>
+        <div class="mx-kpi__label">Paiement</div>
+        <div class="mx-kpi__value" style="font-size:1.3rem">{{ item.payment.amount|money }}</div>
+        <p>{{ item.payment.provider_ref }} · {{ item.payment.get_channel_display }}</p>
+        <p>{{ item.payment.payer_name|default:"—" }}</p>
+      </div>
+      <div class="mx-recon__arrow" aria-hidden="true">↕</div>
+      <div>
+        <div class="mx-kpi__label">Facture</div>
+        {% if item.explain.invoice %}
+        <div class="mx-kpi__value" style="font-size:1.3rem">{{ item.explain.invoice.amount|money }}</div>
+        <p>{{ item.explain.invoice.reference }}</p>
+        <p>{{ item.explain.invoice.client_name }}</p>
+        {% else %}
+        <p>Aucune facture candidate.</p>
+        {% endif %}
+      </div>
+    </div>
+    <p style="margin-top:1rem"><strong>Pourquoi cette correspondance ?</strong> {{ item.explain.decision_label }} ({{ item.explain.confidence }})</p>
+    <ul class="mx-criteria">
+      {% for c in item.explain.criteria %}
+      <li class="{% if c.matched %}ok{% else %}ko{% endif %}">{% if c.matched %}✓{% else %}○{% endif %} {{ c.label }}</li>
+      {% endfor %}
+    </ul>
+    <p><a class="mx-btn mx-btn--primary mx-btn--sm" href="{% url 'website:payment_detail' item.payment.pk %}">Examiner</a></p>
+  </article>
+  {% endfor %}
+{% else %}
+<div class="mx-empty"><h3>Rien à valider.</h3><p>Les paiements à revue humaine apparaîtront dans cette file.</p></div>
+{% endif %}
+{% endblock %}

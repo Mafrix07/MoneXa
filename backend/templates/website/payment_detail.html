@@ -1,0 +1,74 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}{{ payment.provider_ref }} — MONEXA{% endblock %}
+{% block heading %}Transaction{% endblock %}
+{% block content %}
+<p class="mx-kpi__label">Transaction {{ payment.provider_ref }}</p>
+<p class="mx-h1">{{ payment.amount|money }}</p>
+<p class="mx-lede">Entrée · {{ payment.get_channel_display }} · {{ payment.paid_at|date:"d F Y — H:i" }}</p>
+{% status_badge payment.status payment.get_status_display %}
+
+<div class="mx-grid mx-grid--2" style="margin-top:1.2rem">
+  <section class="mx-card">
+    <h2 class="mx-top__title">Fiche</h2>
+    <p><strong>Contrepartie</strong><br>{{ payment.payer_name|default:"Donnée non disponible" }}</p>
+    <p><strong>Téléphone</strong><br>{{ payment.payer_phone|default:"Donnée non disponible" }}</p>
+    <p><strong>Référence</strong><br>{{ payment.provider_ref }}</p>
+    <p><strong>Réconciliation</strong><br>{% if payment.invoice %}{{ payment.invoice.reference }} — {{ payment.invoice.client_name }}{% else %}Non rattachée{% endif %}</p>
+    <p><strong>Confiance extraction</strong><br>{% if payment.ai_confidence %}{{ payment.ai_confidence }}{% else %}Donnée non disponible{% endif %}</p>
+  </section>
+  <section class="mx-card">
+    <h2 class="mx-top__title">Pourquoi ce rapprochement</h2>
+    <p>{{ explain.decision_label }} · confiance {{ explain.confidence }}</p>
+    <ul class="mx-criteria">
+      {% for c in explain.criteria %}
+      <li class="{% if c.matched %}ok{% else %}ko{% endif %}">{% if c.matched %}✓{% else %}○{% endif %} {{ c.label }}{% if c.value %} — {{ c.value }}{% endif %}</li>
+      {% empty %}
+      <li>Aucun critère calculé.</li>
+      {% endfor %}
+    </ul>
+    <p class="mx-kpi__hint">{{ explain.disclaimer }}</p>
+    {% if user.is_comptable_or_higher %}
+    <form method="post" action="{% url 'website:payment_review' payment.pk %}" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem">
+      {% csrf_token %}
+      <button class="mx-btn mx-btn--primary mx-btn--sm" name="decision" value="ACCEPT">Accepter</button>
+      <button class="mx-btn mx-btn--danger mx-btn--sm" name="decision" value="REJECT">Refuser</button>
+    </form>
+    {% if pending_invoices %}
+    <form method="post" action="{% url 'website:payment_review' payment.pk %}" style="margin-top:.75rem">
+      {% csrf_token %}
+      <label class="mx-kpi__label" for="invoice_id">Choisir une autre facture</label>
+      <select class="mx-select" name="invoice_id" id="invoice_id">
+        {% for inv in pending_invoices %}
+        <option value="{{ inv.pk }}">{{ inv.reference }} — {{ inv.client_name }} — {{ inv.amount|money }}</option>
+        {% endfor %}
+      </select>
+      <button class="mx-btn mx-btn--ghost mx-btn--sm" style="margin-top:.5rem" name="decision" value="ATTACH">Rattacher</button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </section>
+</div>
+<section class="mx-card">
+  <h2 class="mx-top__title">Preuve</h2>
+  {% if payment.evidence_image %}
+  <img src="{{ payment.evidence_image.url }}" alt="Preuve de paiement" style="max-width:360px;border-radius:10px">
+  {% elif payment.raw_text %}
+  <pre style="white-space:pre-wrap;font-size:.85rem">{{ payment.raw_text }}</pre>
+  {% else %}
+  <p>Donnée non disponible — aucune image ni texte n'est stocké pour cette écriture.</p>
+  {% endif %}
+</section>
+<section class="mx-card">
+  <h2 class="mx-top__title">Historique</h2>
+  {% if audits %}
+  <ul>
+    {% for a in audits %}
+    <li>{{ a.timestamp|date:"d/m/Y H:i" }} — {{ a.action }}{% if a.user %} · {{ a.user.email }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>Aucun événement d'audit pour cet objet.</p>
+  {% endif %}
+</section>
+{% endblock %}

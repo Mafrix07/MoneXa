@@ -1,0 +1,35 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Preuves — MONEXA{% endblock %}
+{% block heading %}Preuves{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Ajouter une preuve</h2>
+<p class="mx-lede">Photo, document et CSV arrivent via l'API et l'app mobile. Ici : collage SMS, le chemin le plus fiable hors réseau.</p>
+<div class="mx-chips">
+  <span class="mx-badge mx-badge--muted">Photo (mobile / API)</span>
+  <span class="mx-badge mx-badge--info">SMS</span>
+  <span class="mx-badge mx-badge--muted">Document</span>
+  <span class="mx-badge mx-badge--muted">CSV</span>
+  <span class="mx-badge mx-badge--muted">Saisie manuelle (API)</span>
+</div>
+<form method="post" class="mx-card">{% csrf_token %}
+  <label for="id_text">{{ form.text.label }}</label>
+  {{ form.text }}
+  {% if form.text.errors %}<p role="alert">{{ form.text.errors }}</p>{% endif %}
+  <button class="mx-btn mx-btn--ghost" style="margin-top:.75rem" type="submit">Extraire</button>
+</form>
+{% if extracted %}
+<section class="mx-card">
+  <h3 class="mx-top__title">Informations détectées</h3>
+  <p>Montant<br><strong>{{ extracted.montant|money }}</strong></p>
+  <p>Référence<br><strong>{{ extracted.reference }}</strong></p>
+  <p>Émetteur<br><strong>{{ extracted.emetteur }}</strong></p>
+  <p>Date<br><strong>{{ extracted.date_paiement }}</strong></p>
+  <p>Confiance<br><strong>{{ extracted.ai_confidence }}</strong></p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="text" value="{{ form.text.value }}">
+    <button class="mx-btn mx-btn--primary" name="confirm" value="1" type="submit">Vérifier et enregistrer</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

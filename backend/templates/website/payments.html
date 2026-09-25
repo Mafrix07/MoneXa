@@ -1,41 +1,76 @@
-{% extends "website/base.html" %}
-{% block title %}Paiements — MoneXa{% endblock %}
-{% block hero %}
-<div class="container-fluid bg-breadcrumb">
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4">Paiements</h4>
-    </div>
-</div>
-{% endblock %}
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Transactions — MONEXA{% endblock %}
+{% block heading %}Transactions{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="mb-4">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'website:payments' %}">Tous</a>
-        <a class="btn btn-sm btn-outline-primary" href="?status=A_VALIDER">À valider</a>
-        <a class="btn btn-sm btn-outline-primary" href="?status=RECONCILIE">Réconciliés</a>
-        <a class="btn btn-sm btn-outline-primary" href="?status=ANOMALIE">Anomalies</a>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-monexa table-striped">
-            <thead>
-                <tr><th>Réf</th><th>Payeur</th><th>Montant</th><th>Canal</th><th>Date</th><th>Statut</th><th>IA</th></tr>
-            </thead>
-            <tbody>
-            {% for p in payments %}
-            <tr>
-                <td>{{ p.provider_ref }}</td>
-                <td>{{ p.payer_name }}</td>
-                <td>{{ p.amount }} FCFA</td>
-                <td>{{ p.get_channel_display }}</td>
-                <td>{{ p.paid_at|date:"d/m/Y H:i" }}</td>
-                <td>{{ p.get_status_display }}</td>
-                <td>{{ p.ai_confidence }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="7">Aucun paiement pour ce filtre.</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<h2 class="mx-h1">Ledger</h2>
+<p class="mx-lede">Mouvements enregistrés pour votre organisation. Les montants sont alignés pour comparer d'un coup d'œil.</p>
+<form method="get" class="mx-filters" style="align-items:center">
+  <input class="mx-input" style="max-width:220px;min-height:38px" type="search" name="q" value="{{ q }}" placeholder="Référence ou contrepartie">
+  <select class="mx-select" style="max-width:160px;min-height:38px" name="channel">
+    <option value="">Toutes les sources</option>
+    {% for code, label in channels %}
+    <option value="{{ code }}" {% if channel == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button class="mx-btn mx-btn--ghost mx-btn--sm" type="submit">Filtrer</button>
+</form>
+<div class="mx-filters">
+  <a href="{% url 'website:payments' %}" class="{% if not status_filter %}is-on{% endif %}">Tous</a>
+  <a href="?status=A_VALIDER" class="{% if status_filter == 'A_VALIDER' %}is-on{% endif %}">À valider</a>
+  <a href="?status=RECONCILIE" class="{% if status_filter == 'RECONCILIE' %}is-on{% endif %}">Rapprochés</a>
+  <a href="?status=NON_RATTACHE" class="{% if status_filter == 'NON_RATTACHE' %}is-on{% endif %}">Non rattachés</a>
+  <a href="?status=ANOMALIE" class="{% if status_filter == 'ANOMALIE' %}is-on{% endif %}">Anomalies</a>
 </div>
+{% if payments %}
+<div class="mx-table-wrap">
+  <table class="mx-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Source</th>
+        <th>Référence</th>
+        <th>Contrepartie</th>
+        <th class="num">Montant</th>
+        <th class="center">Statut</th>
+        <th class="center">Réconciliation</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in payments %}
+      <tr>
+        <td>{{ p.paid_at|date:"d M Y H:i" }}</td>
+        <td>{% source_icon p.channel size="sm" %} {{ p.get_channel_display }}</td>
+        <td><a href="{% url 'website:payment_detail' p.pk %}">{{ p.provider_ref }}</a></td>
+        <td>{{ p.payer_name|default:"—" }}</td>
+        <td class="num">{{ p.amount|money }}</td>
+        <td class="center">{% status_badge p.status p.get_status_display %}</td>
+        <td class="center">{% if p.invoice %}{{ p.invoice.reference }}{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="mx-mobile-cards">
+  {% for p in payments %}
+  <article>
+    <div style="display:flex;justify-content:space-between;gap:.5rem">
+      <a href="{% url 'website:payment_detail' p.pk %}"><strong>{{ p.provider_ref }}</strong></a>
+      <span>{{ p.amount|money }}</span>
+    </div>
+    <div>{{ p.get_channel_display }} · {{ p.paid_at|date:"d/m/Y" }}</div>
+    {% status_badge p.status p.get_status_display %}
+  </article>
+  {% endfor %}
+</div>
+{% if page.has_other_pages %}
+<p style="margin-top:1rem">
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&status={{ status_filter }}&q={{ q }}&channel={{ channel }}">Précédent</a>{% endif %}
+  page {{ page.number }} / {{ page.paginator.num_pages }}
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}&status={{ status_filter }}&q={{ q }}&channel={{ channel }}">Suivant</a>{% endif %}
+</p>
+{% endif %}
+{% else %}
+<div class="mx-empty"><h3>Aucune transaction pour cette période.</h3><p>Changez les filtres ou ajoutez une preuve.</p></div>
+{% endif %}
 {% endblock %}

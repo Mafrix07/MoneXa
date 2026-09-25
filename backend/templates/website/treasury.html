@@ -1,0 +1,27 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Trésorerie — MONEXA{% endblock %}
+{% block heading %}Trésorerie{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Trésorerie consolidée</h2>
+<p class="mx-lede">Soldes issus du ledger (paiements moins dépenses), par canal et pour la période récente.</p>
+<div class="mx-kpis">
+  <div class="mx-kpi mx-kpi--hero">
+    <div class="mx-kpi__label">Solde net</div>
+    <div class="mx-kpi__value">{{ kpis.solde_total|money }}</div>
+    <div class="mx-kpi__hint">30 j : {{ kpis.flux_net_30j|money_signed }}</div>
+  </div>
+  <div class="mx-kpi"><div class="mx-kpi__label">Entrées 30 j</div><div class="mx-kpi__value">{{ kpis.encaisse_30j|money }}</div></div>
+  <div class="mx-kpi"><div class="mx-kpi__label">Sorties 30 j</div><div class="mx-kpi__value">{{ kpis.decaisse_30j|money }}</div></div>
+</div>
+<div class="mx-source-grid">
+  {% for code, label in channels %}
+  <article class="mx-source-card">
+    <div class="mx-source-card__top">
+      <div style="display:flex;gap:.6rem;align-items:center">{% source_icon code size="md" %} <strong>{{ label }}</strong></div>
+    </div>
+    <div class="mx-source-card__amt">{{ kpis.solde_par_canal|lookup:code|money }}</div>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

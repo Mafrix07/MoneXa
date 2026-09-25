@@ -1,0 +1,45 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Sources — MONEXA{% endblock %}
+{% block heading %}Sources financières{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Sources financières</h2>
+<p class="mx-lede">Les connecteurs opérateurs sont simulés tant qu'aucune API officielle n'est configurée. Les soldes viennent du ledger.</p>
+{% if sources %}
+<div class="mx-source-grid">
+  {% for s in sources %}
+  <article class="mx-source-card">
+    <div class="mx-source-card__top">
+      <div style="display:flex;gap:.6rem;align-items:center">
+        {% source_icon s.channel size="md" %}
+        <div>
+          <strong>{{ s.name }}</strong>
+          <div class="mx-kpi__hint">{{ s.get_integration_method_display }}</div>
+        </div>
+      </div>
+      {% status_badge s.status s.get_status_display %}
+    </div>
+    <div>{% if s.merchant_mask %}Compte {{ s.merchant_mask }}{% else %}Masque : donnée non disponible{% endif %}</div>
+    <div class="mx-source-card__amt">{{ solde_par_canal|lookup:s.channel|money }}</div>
+    <div class="mx-kpi__hint">
+      Dernière sync :
+      {% if s.last_sync_at %}{{ s.last_sync_at|timesince }}{% else %}jamais{% endif %}
+    </div>
+    {% if s.last_error %}<p class="mx-kpi__hint">{{ s.last_error }}</p>{% endif %}
+    {% if s.is_simulated %}<p class="mx-kpi__hint">Mode : connecteur simulé (pas d'API opérateur réelle).</p>{% endif %}
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <a class="mx-btn mx-btn--ghost mx-btn--sm" href="{% url 'website:payments' %}?channel={{ s.channel }}">Voir les transactions</a>
+      <form method="post" action="{% url 'website:source_sync' s.pk %}">{% csrf_token %}
+        <button class="mx-btn mx-btn--primary mx-btn--sm" type="submit">Synchroniser</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="mx-empty">
+  <h3>Aucune source configurée</h3>
+  <p>Les comptes de trésorerie de l'organisation apparaîtront ici après configuration.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Prévisions — MONEXA{% endblock %}
+{% block heading %}Prévisions{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Prévision de trésorerie</h2>
+<p class="mx-lede">{{ data.model }}. Aucun chiffre n'est inventé hors modèle.</p>
+{% if insufficient %}
+<div class="mx-card"><p>Prévision indisponible au niveau Holt-Winters : historique insuffisant. Un lissage simple est affiché à titre indicatif.</p></div>
+{% endif %}
+<div class="mx-kpis">
+  {% for label, value in checkpoints %}
+  <div class="mx-kpi">
+    <div class="mx-kpi__label">{{ label }}</div>
+    <div class="mx-kpi__value" style="font-size:1.35rem">{{ value|money }}</div>
+  </div>
+  {% endfor %}
+</div>
+<section class="mx-card">
+  <h3 class="mx-top__title">Évolution prévue (flux net)</h3>
+  {% if spark %}
+  <svg class="mx-spark" viewBox="0 0 640 140" role="img" aria-label="Courbe de prévision">
+    <path d="{{ spark }}"/>
+  </svg>
+  {% else %}
+  <p>Donnée non disponible pour le graphique.</p>
+  {% endif %}
+</section>
+<section class="mx-card">
+  <h3 class="mx-top__title">Facteurs présents dans les écritures</h3>
+  {% if explanation.factors %}
+  <ul>
+    {% for f in explanation.factors %}
+    <li>{{ f.label }}{% if f.value %} — {{ f.value }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  <p class="mx-kpi__hint">{{ explanation.disclaimer }}</p>
+  {% else %}
+  <p>Aucun facteur dérivé : ledger trop peu fourni.</p>
+  {% endif %}
+</section>
+{% endblock %}

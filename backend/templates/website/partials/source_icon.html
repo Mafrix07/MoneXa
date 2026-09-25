@@ -1,0 +1,3 @@
+<span class="mx-source mx-source--{{ size }} mx-source--{{ channel|default:'BANQUE' }}" title="{{ channel }}" aria-hidden="true">
+  {% if channel == "TMONEY" %}TM{% elif channel == "MOOV" %}MV{% elif channel == "FLOOZ" %}FL{% elif channel == "BANQUE" %}BQ{% elif channel == "ESPECES" %}CS{% else %}•{% endif %}
+</span>

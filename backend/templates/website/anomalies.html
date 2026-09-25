@@ -1,0 +1,28 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Anomalies — MONEXA{% endblock %}
+{% block heading %}Anomalies{% endblock %}
+{% block content %}
+<h2 class="mx-h1">{{ rows|length }} anomalie{{ rows|length|pluralize }} à examiner</h2>
+<p class="mx-lede">Signal de cohérence interne. Ce n'est pas une qualification de fraude.</p>
+{% if rows %}
+  {% for row in rows %}
+  <article class="mx-alert {% if row.payment.status == 'ANOMALIE' %}mx-alert--danger{% endif %}">
+    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div>
+        <strong>Anomalie détectée</strong>
+        <div>{{ row.payment.amount|money }} · {{ row.payment.get_channel_display }} · {{ row.payment.provider_ref }}</div>
+        {% for f in row.flags %}
+        <div class="mx-kpi__hint">{{ f.type|default:f.label|default:"Écart de cohérence" }}</div>
+        {% empty %}
+        <div class="mx-kpi__hint">{{ row.payment.get_status_display }}</div>
+        {% endfor %}
+      </div>
+      <a class="mx-btn mx-btn--ghost mx-btn--sm" href="{% url 'website:payment_detail' row.payment.pk %}">Examiner</a>
+    </div>
+  </article>
+  {% endfor %}
+{% else %}
+<div class="mx-empty"><h3>Aucune anomalie ouverte.</h3></div>
+{% endif %}
+{% endblock %}

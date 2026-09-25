@@ -1,36 +1,10 @@
-{% extends "website/base.html" %}
-{% block title %}À propos — MoneXa{% endblock %}
-{% block hero %}
-<div class="container-fluid bg-breadcrumb">
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4">À propos</h4>
-        <ol class="breadcrumb d-flex justify-content-center mb-0">
-            <li class="breadcrumb-item"><a href="{% url 'website:home' %}">Accueil</a></li>
-            <li class="breadcrumb-item active text-primary">À propos</li>
-        </ol>
-    </div>
-</div>
-{% endblock %}
+{% extends "website/marketing_base.html" %}
+{% block title %}À propos — MONEXA{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="row g-5">
-        <div class="col-lg-8">
-            <h2 class="mb-4">Un CFO virtuel pour les PME d'Afrique de l'Ouest</h2>
-            <p>MoneXa est conçu pour le Défi 2 (application mobile) de l'ESIG Tech Arena 2026, avec un backend Django et une app Flutter offline-first. Cette vitrine web reprend le template Stocker (HTML Codex) pour le back-office comptable et la démonstration jury.</p>
-            <p>Rigueur financière : pas de FloatField, références opérateurs uniques, écritures en transaction.atomic(), journal d'audit hash-chainé.</p>
-            <p>Inclusion : français, et langues locales prévues (Ewé, Kabyé) sur mobile.</p>
-        </div>
-        <div class="col-lg-4">
-            <div class="kpi-card">
-                <h5>Stack</h5>
-                <ul class="mb-0">
-                    <li>Django 4.2 + DRF</li>
-                    <li>PostgreSQL 16</li>
-                    <li>Flutter + BLoC</li>
-                    <li>Vision LLM + TresorIA</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+<h1 class="mx-h1">Conçu pour la trésorerie fragmentée</h1>
+<p class="mx-lede">MONEXA réunit Mobile Money, banque et caisse dans un ledger unique. Pas de cliché, pas de chiffres inventés : un outil que le gérant ouvre le lundi matin.</p>
+<div class="mx-grid mx-grid--2">
+  <article class="mx-card"><h2>Confiance</h2><p>Journal d'audit hashé, rôles gérant / comptable / caissier, isolation par entreprise.</p></article>
+  <article class="mx-card"><h2>Précision</h2><p>Montants en Decimal. Aucune conversion de devise silencieuse. Matching expliqué critère par critère.</p></article>
 </div>
 {% endblock %}

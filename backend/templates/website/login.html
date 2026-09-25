@@ -1,32 +1,47 @@
-{% extends "website/base.html" %}
-{% block title %}Connexion — MoneXa{% endblock %}
-{% block hero %}
-<div class="container-fluid bg-breadcrumb">
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4">Connexion</h4>
-    </div>
-</div>
-{% endblock %}
-{% block content %}
-<div class="container py-5">
-    <div class="auth-card">
-        <h3 class="mb-3">Espace web</h3>
-        <p class="text-muted">Comptes démo : gerant / comptable / caissier @monexa.tg — Monexa2026!</p>
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion — MONEXA</title>
+  <link rel="icon" type="image/png" href="{% static 'website/img/MONEXA_2_without_slogan.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="{% static 'website/css/monexa-app.css' %}?v=3" rel="stylesheet">
+</head>
+<body class="mx-app">
+  <main class="mx-login">
+    <section class="mx-login__visual">
+      <img src="{% static 'website/img/MONEXA_2_without_slogan.png' %}" width="180" height="48" alt="MONEXA">
+      <div>
+        <h2>Gérez votre trésorerie. Comprenez vos flux. Décidez avec confiance.</h2>
+        <p style="color:#9bb0d0;max-width:36ch;margin-top:1rem">Mobile Money, banque et caisse dans un ledger unique — sans inventer un solde.</p>
+      </div>
+      <p style="font-size:.8rem;color:#7f91b0">Financial intelligence for African businesses.</p>
+    </section>
+    <section class="mx-login__panel">
+      <div class="mx-login__card">
+        <h1 class="mx-h1">Bienvenue sur MONEXA</h1>
+        <p class="mx-lede">Espace web pour gérants et comptables.</p>
         <form method="post">{% csrf_token %}
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-            <div class="mb-3">
-                <label class="form-label">{{ form.username.label }}</label>
-                {{ form.username }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ form.password.label }}</label>
-                {{ form.password }}
-            </div>
-            <button class="btn btn-primary w-100 rounded-pill py-3" type="submit">Se connecter</button>
+          {% if form.non_field_errors %}
+          <div class="mx-alert mx-alert--danger" role="alert">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div style="margin-bottom:.85rem">
+            <label for="id_username">{{ form.username.label }}</label>
+            {{ form.username }}
+          </div>
+          <div style="margin-bottom:.85rem">
+            <label for="id_password">{{ form.password.label }}</label>
+            {{ form.password }}
+          </div>
+          <button class="mx-btn mx-btn--primary" style="width:100%" type="submit">Se connecter</button>
         </form>
-        <p class="mt-3 mb-0 small"><a href="/admin/">Django Admin</a> · <a href="/api/schema/swagger-ui/">Swagger</a></p>
-    </div>
-</div>
-{% endblock %}
+        <p class="mx-kpi__hint" style="margin-top:1rem"><a href="{% url 'website:home' %}">Retour au site</a></p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

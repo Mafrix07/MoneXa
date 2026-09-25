@@ -1,21 +1,9 @@
-{% extends "website/base.html" %}
-{% block title %}Contact — MoneXa{% endblock %}
-{% block hero %}
-<div class="container-fluid bg-breadcrumb">
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4">Contact</h4>
-    </div>
-</div>
-{% endblock %}
+{% extends "website/marketing_base.html" %}
+{% block title %}Contact — MONEXA{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <form method="post" class="kpi-card">{% csrf_token %}
-                {{ form.as_p }}
-                <button class="btn btn-primary rounded-pill py-3 px-5" type="submit">Envoyer</button>
-            </form>
-        </div>
-    </div>
-</div>
+<h1 class="mx-h1">Contact</h1>
+<form method="post" class="mx-card" style="max-width:32rem">{% csrf_token %}
+  {{ form.as_p }}
+  <button class="mx-btn mx-btn--primary" type="submit">Envoyer</button>
+</form>
 {% endblock %}

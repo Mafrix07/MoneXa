@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MONEXA{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{% static 'website/img/MONEXA_2_without_slogan.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="{% static 'website/css/monexa-app.css' %}?v=3" rel="stylesheet">
+</head>
+<body class="mx-app">
+  <header class="mx-mkt-header">
+    <a href="{% url 'website:home' %}"><img src="{% static 'website/img/MONEXA_Fond_Blanc.png' %}" width="180" height="44" alt="MONEXA"></a>
+    <nav>
+      <a href="{% url 'website:home' %}">Produit</a>
+      <a href="{% url 'website:about' %}">À propos</a>
+      <a href="{% url 'website:services' %}">Fonctionnalités</a>
+      <a href="{% url 'website:faq' %}">FAQ</a>
+      <a href="{% url 'website:contact' %}">Contact</a>
+      <a class="mx-btn mx-btn--primary mx-btn--sm" href="{% url 'website:login' %}">Connexion</a>
+    </nav>
+  </header>
+  <main class="mx-content">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="mx-mkt-footer">
+    <div>MONEXA — Financial intelligence for African businesses. Mixx, Moov et Flooz sont des marques de leurs opérateurs.</div>
+  </footer>
+</body>
+</html>

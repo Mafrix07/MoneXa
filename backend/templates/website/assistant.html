@@ -1,0 +1,30 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}TresorIA — MONEXA{% endblock %}
+{% block heading %}TresorIA{% endblock %}
+{% block content %}
+<h2 class="mx-h1">TresorIA</h2>
+<p class="mx-lede">Assistant de trésorerie. Les montants viennent du ledger, pas d'une invention du modèle.</p>
+<div class="mx-kpis">
+  <div class="mx-kpi"><div class="mx-kpi__label">Trésorerie</div><div class="mx-kpi__value" style="font-size:1.2rem">{{ kpis.solde_total|money }}</div></div>
+  <div class="mx-kpi"><div class="mx-kpi__label">À rapprocher</div><div class="mx-kpi__value">{{ kpis.paiements_a_valider }}</div></div>
+  <div class="mx-kpi"><div class="mx-kpi__label">Anomalies</div><div class="mx-kpi__value">{{ kpis.nb_anomalies }}</div></div>
+</div>
+<div class="mx-chips">
+  <button type="button" data-fill-question="Quelle est ma trésorerie ?">Quelle est ma trésorerie ?</button>
+  <button type="button" data-fill-question="Quels paiements sont en attente ?">Paiements en attente</button>
+  <button type="button" data-fill-question="Combien d'anomalies ?">Quelles anomalies vérifier ?</button>
+</div>
+<form method="post" class="mx-card">{% csrf_token %}
+  {{ form.question }}
+  <button class="mx-btn mx-btn--primary" style="margin-top:.75rem" type="submit">Analyser</button>
+</form>
+{% if answer %}
+<section class="mx-card mx-chat__log" style="margin-top:1rem">
+  {% if question %}<p class="mx-kpi__hint">Vous : {{ question }}</p>{% endif %}
+  {{ answer|linebreaksbr }}
+</section>
+{% else %}
+<div class="mx-empty"><p>Posez une question sur vos soldes, factures ou prévisions. Hors sujet : TresorIA refuse.</p></div>
+{% endif %}
+{% endblock %}

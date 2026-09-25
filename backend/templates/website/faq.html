@@ -1,27 +1,8 @@
-{% extends "website/base.html" %}
-{% block title %}FAQ — MoneXa{% endblock %}
-{% block hero %}
-<div class="container-fluid bg-breadcrumb">
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4">FAQ</h4>
-    </div>
-</div>
-{% endblock %}
+{% extends "website/marketing_base.html" %}
+{% block title %}FAQ — MONEXA{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="accordion" id="faqAcc">
-        <div class="accordion-item">
-            <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#q1">Faut-il une clé OpenAI ?</button></h2>
-            <div id="q1" class="accordion-collapse collapse show" data-bs-parent="#faqAcc"><div class="accordion-body">Oui pour extraire une <strong>photo</strong>. Le collage SMS fonctionne sans clé (parseur déterministe).</div></div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q2">Quels comptes de démo ?</button></h2>
-            <div id="q2" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body">gerant@monexa.tg, comptable@monexa.tg, caissier@monexa.tg — mot de passe Monexa2026!</div></div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q3">TresorIA peut-il modifier la base ?</button></h2>
-            <div id="q3" class="accordion-collapse collapse" data-bs-parent="#faqAcc"><div class="accordion-body">Non. Il reformule uniquement des KPIs pré-calculés. Aucun SQL n'est généré.</div></div>
-        </div>
-    </div>
-</div>
+<h1 class="mx-h1">Questions fréquentes</h1>
+<article class="mx-card"><h3>Faut-il une API Moov ou T-Money ?</h3><p>Non pour démarrer. L'import SMS / CSV suffit. Un connecteur live ne s'active que si des identifiants officiels sont fournis.</p></article>
+<article class="mx-card"><h3>Qui voit quoi ?</h3><p>Le caissier saisit. Le comptable rapproche. Le gérant voit la trésorerie, l'audit et les utilisateurs.</p></article>
+<article class="mx-card"><h3>Une anomalie est-elle une fraude ?</h3><p>Non. C'est un signal à examiner.</p></article>
 {% endblock %}

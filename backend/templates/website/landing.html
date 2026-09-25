@@ -221,7 +221,8 @@
         <a href="#solution">Solution</a>
         <a href="#fonctionnalites">Produit</a>
         <a href="#tarifs">Tarifs</a>
-        <a href="#demo" class="btn btn-primary">Demander une démo</a>
+        <a href="{% url 'website:login' %}" class="btn btn-ghost">Connexion</a>
+        <a href="{% url 'website:login' %}" class="btn btn-primary">Commencer</a>
       </nav>
     </div>
   </header>
@@ -231,11 +232,11 @@
       <div class="wrap hero-grid">
         <div>
           <p class="eyebrow">SaaS B2B · Afrique de l’Ouest</p>
-          <h1>Tous vos comptes Mobile Money, <span>une seule vérité</span>.</h1>
+          <h1>Votre trésorerie. Enfin réunie. <span>Tous vos comptes Mobile Money, une seule vérité</span>.</h1>
           <p class="lead">MoneXa centralise Mixx by Yas, Moov Money et la banque, extrait vos preuves de paiement par IA, et réconcilie automatiquement — pour que la caisse d’une TPE togolaise arrête de vivre dans WhatsApp et Excel.</p>
           <div class="hero-cta">
-            <a class="btn btn-primary" href="#demo">Demander une démo</a>
-            <a class="btn btn-ghost" href="{% url 'website:login' %}">Connexion espace client</a>
+            <a class="btn btn-primary" href="{% url 'website:login' %}">Commencer</a>
+            <a class="btn btn-ghost" href="#solution">Découvrir MONEXA</a>
           </div>
           <div class="trust">
             <span class="chip">Mixx by Yas</span>
@@ -251,21 +252,20 @@
           </div>
           <div class="mock-body">
             <div class="kpis">
-              <div class="kpi"><small>Solde consolidé</small><strong>4 368 500 F</strong></div>
-              <div class="kpi"><small>À valider</small><strong>3</strong></div>
-              <div class="kpi"><small>Anomalies</small><strong>0</strong></div>
+              <div class="kpi"><small>Solde consolidé</small><strong>FCFA</strong></div>
+              <div class="kpi"><small>À valider</small><strong>—</strong></div>
+              <div class="kpi"><small>Anomalies</small><strong>—</strong></div>
             </div>
+            <p style="font-size:.78rem;color:var(--muted);margin:.6rem 0">Aperçu d'interface — les montants réels s'affichent après connexion.</p>
             <div class="bars" aria-hidden="true">
-              <div class="bar-row"><span>Mixx by Yas</span><div class="track"><div class="fill mixx"></div></div><span>62%</span></div>
-              <div class="bar-row"><span>Moov Money</span><div class="track"><div class="fill moov"></div></div><span>28%</span></div>
-              <div class="bar-row"><span>Banque</span><div class="track"><div class="fill bank"></div></div><span>10%</span></div>
+              <div class="bar-row"><span>Mixx by Yas</span><div class="track"><div class="fill mixx"></div></div></div>
+              <div class="bar-row"><span>Moov Money</span><div class="track"><div class="fill moov"></div></div></div>
+              <div class="bar-row"><span>Banque</span><div class="track"><div class="fill bank"></div></div></div>
             </div>
             <table class="mock-table">
               <thead><tr><th>Réf</th><th>Montant</th><th>Statut</th></tr></thead>
               <tbody>
-                <tr><td>TX2049183</td><td>3 500 F</td><td class="ok">Rapproché</td></tr>
-                <tr><td>TXM882001</td><td>85 000 F</td><td class="wait">À valider</td></tr>
-                <tr><td>TX9001457</td><td>750 000 F</td><td class="ok">Rapproché</td></tr>
+                <tr><td>—</td><td>FCFA</td><td class="wait">File réelle après import</td></tr>
               </tbody>
             </table>
           </div>

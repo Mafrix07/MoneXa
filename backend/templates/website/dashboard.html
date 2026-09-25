@@ -1,58 +1,83 @@
-{% extends "website/base.html" %}
-{% block title %}Tableau de bord — MoneXa{% endblock %}
-{% block hero %}
-<div class="container-fluid bg-breadcrumb">
-    <div class="container text-center py-5" style="max-width: 900px;">
-        <h4 class="text-white display-4 mb-4">Trésorerie</h4>
-        <p class="text-white mb-0">{{ user.email }} · {{ user.get_role_display }}</p>
-    </div>
-</div>
-{% endblock %}
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}Vue d'ensemble — MONEXA{% endblock %}
+{% block heading %}Vue d'ensemble{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="row g-4 mb-5">
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Solde total</div><div class="kpi-value">{{ kpis.solde_total|floatformat:0 }} FCFA</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">T-Money</div><div class="kpi-value">{{ kpis.solde_par_canal.TMONEY|default:0|floatformat:0 }}</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Moov</div><div class="kpi-value">{{ kpis.solde_par_canal.MOOV|default:0|floatformat:0 }}</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">À valider</div><div class="kpi-value">{{ kpis.paiements_a_valider }}</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Encaissé 7 j</div><div class="kpi-value">{{ kpis.encaisse_7j|floatformat:0 }}</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Factures en retard</div><div class="kpi-value">{{ kpis.factures_en_retard }}</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Anomalies</div><div class="kpi-value">{{ kpis.nb_anomalies }}</div></div></div>
-        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Prévision J+30</div><div class="kpi-value">{{ kpis.prevision_j30|floatformat:0 }}</div></div></div>
-    </div>
+<p class="mx-h1">Bonjour, {{ hello_name }}</p>
+<p class="mx-lede">Voici l'état de votre trésorerie aujourd'hui{% if mx_org %} — {{ mx_org.name }}{% endif %}.</p>
 
-    <div class="row g-5">
-        <div class="col-lg-7">
-            <h4 class="mb-3">Derniers paiements</h4>
-            <div class="table-responsive">
-                <table class="table table-monexa">
-                    <thead><tr><th>Réf</th><th>Montant</th><th>Canal</th><th>Statut</th></tr></thead>
-                    <tbody>
-                    {% for p in payments %}
-                    <tr>
-                        <td>{{ p.provider_ref }}</td>
-                        <td>{{ p.amount }}</td>
-                        <td>{{ p.get_channel_display }}</td>
-                        <td>{{ p.get_status_display }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4">Aucun paiement.</td></tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <a href="{% url 'website:payments' %}">Voir la file complète</a>
-        </div>
-        <div class="col-lg-5">
-            <h4 class="mb-3">TresorIA</h4>
-            <form method="post" class="kpi-card">{% csrf_token %}
-                {{ form.question }}
-                <button class="btn btn-primary rounded-pill mt-3" type="submit">Demander</button>
-            </form>
-            {% if answer %}
-            <div class="alert alert-light border mt-3">{{ answer|linebreaksbr }}</div>
-            {% endif %}
-        </div>
+<div class="mx-kpis">
+  <div class="mx-kpi mx-kpi--hero">
+    <div class="mx-kpi__label">Trésorerie totale</div>
+    <div class="mx-kpi__value">{{ kpis.solde_total|money }}</div>
+    <div class="mx-kpi__hint">Flux net 7 j : {{ kpis.flux_net_7j|money_signed }}</div>
+  </div>
+  <div class="mx-kpi">
+    <div class="mx-kpi__label">Entrées 7 j</div>
+    <div class="mx-kpi__value">{{ kpis.encaisse_7j|money }}</div>
+  </div>
+  <div class="mx-kpi">
+    <div class="mx-kpi__label">Sorties 7 j</div>
+    <div class="mx-kpi__value">{{ kpis.decaisse_7j|money }}</div>
+  </div>
+  <div class="mx-kpi">
+    <div class="mx-kpi__label">À rapprocher</div>
+    <div class="mx-kpi__value">{{ kpis.paiements_a_valider }}</div>
+    <div class="mx-kpi__hint">File comptable</div>
+  </div>
+  <div class="mx-kpi">
+    <div class="mx-kpi__label">Anomalies</div>
+    <div class="mx-kpi__value">{{ kpis.nb_anomalies }}</div>
+    <div class="mx-kpi__hint">À examiner — pas une fraude établie</div>
+  </div>
+</div>
+
+<div class="mx-grid mx-grid--2">
+  <section class="mx-card">
+    <h2 class="mx-top__title">Derniers mouvements</h2>
+    {% if payments %}
+    <div class="mx-table-wrap" style="border:0;margin-top:.75rem">
+      <table class="mx-table">
+        <thead><tr><th>Réf</th><th>Source</th><th class="num">Montant</th><th class="center">Statut</th></tr></thead>
+        <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><a href="{% url 'website:payment_detail' p.pk %}">{{ p.provider_ref }}</a></td>
+          <td>{% source_icon p.channel size="sm" %} {{ p.get_channel_display }}</td>
+          <td class="num">{{ p.amount|money }}</td>
+          <td class="center">{% status_badge p.status p.get_status_display %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
+    <div class="mx-mobile-cards" style="margin-top:.75rem">
+      {% for p in payments %}
+      <article>
+        <strong><a href="{% url 'website:payment_detail' p.pk %}">{{ p.provider_ref }}</a></strong>
+        <div>{{ p.amount|money }} · {{ p.get_channel_display }}</div>
+        {% status_badge p.status p.get_status_display %}
+      </article>
+      {% endfor %}
+    </div>
+    <p style="margin-top:1rem"><a class="mx-btn mx-btn--ghost mx-btn--sm" href="{% url 'website:payments' %}">Toutes les transactions</a></p>
+    {% else %}
+    <div class="mx-empty">
+      <h3>Aucune transaction</h3>
+      <p>Importez un SMS ou une preuve pour alimenter le ledger.</p>
+      <a class="mx-btn mx-btn--primary" href="{% url 'website:evidence' %}">Ajouter une preuve</a>
+    </div>
+    {% endif %}
+  </section>
+  <section class="mx-card">
+    <h2 class="mx-top__title">Soldes par canal</h2>
+    {% for code, label in channels %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid var(--monexa-border)">
+      <span style="display:flex;align-items:center;gap:.5rem">{% source_icon code size="sm" %} {{ label }}</span>
+      <span class="num" style="font-variant-numeric:tabular-nums;font-weight:700">{{ kpis.solde_par_canal|lookup:code|money }}</span>
+    </div>
+    {% endfor %}
+    <p class="mx-kpi__hint" style="margin-top:.75rem">Prévision J+30 : {{ kpis.prevision_j30|money }} — modèle sur l'historique réel.</p>
+  </section>
 </div>
 {% endblock %}
