@@ -1,0 +1,58 @@
+{% extends "website/base.html" %}
+{% block title %}Tableau de bord — MoneXa{% endblock %}
+{% block hero %}
+<div class="container-fluid bg-breadcrumb">
+    <div class="container text-center py-5" style="max-width: 900px;">
+        <h4 class="text-white display-4 mb-4">Trésorerie</h4>
+        <p class="text-white mb-0">{{ user.email }} · {{ user.get_role_display }}</p>
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4 mb-5">
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Solde total</div><div class="kpi-value">{{ kpis.solde_total|floatformat:0 }} FCFA</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">T-Money</div><div class="kpi-value">{{ kpis.solde_par_canal.TMONEY|default:0|floatformat:0 }}</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Moov</div><div class="kpi-value">{{ kpis.solde_par_canal.MOOV|default:0|floatformat:0 }}</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">À valider</div><div class="kpi-value">{{ kpis.paiements_a_valider }}</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Encaissé 7 j</div><div class="kpi-value">{{ kpis.encaisse_7j|floatformat:0 }}</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Factures en retard</div><div class="kpi-value">{{ kpis.factures_en_retard }}</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Anomalies</div><div class="kpi-value">{{ kpis.nb_anomalies }}</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div class="text-muted small">Prévision J+30</div><div class="kpi-value">{{ kpis.prevision_j30|floatformat:0 }}</div></div></div>
+    </div>
+
+    <div class="row g-5">
+        <div class="col-lg-7">
+            <h4 class="mb-3">Derniers paiements</h4>
+            <div class="table-responsive">
+                <table class="table table-monexa">
+                    <thead><tr><th>Réf</th><th>Montant</th><th>Canal</th><th>Statut</th></tr></thead>
+                    <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td>{{ p.provider_ref }}</td>
+                        <td>{{ p.amount }}</td>
+                        <td>{{ p.get_channel_display }}</td>
+                        <td>{{ p.get_status_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">Aucun paiement.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <a href="{% url 'website:payments' %}">Voir la file complète</a>
+        </div>
+        <div class="col-lg-5">
+            <h4 class="mb-3">TresorIA</h4>
+            <form method="post" class="kpi-card">{% csrf_token %}
+                {{ form.question }}
+                <button class="btn btn-primary rounded-pill mt-3" type="submit">Demander</button>
+            </form>
+            {% if answer %}
+            <div class="alert alert-light border mt-3">{{ answer|linebreaksbr }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

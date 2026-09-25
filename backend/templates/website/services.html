@@ -1,0 +1,25 @@
+{% extends "website/base.html" %}
+{% block title %}Fonctionnalités — MoneXa{% endblock %}
+{% block hero %}
+<div class="container-fluid bg-breadcrumb">
+    <div class="container text-center py-5" style="max-width: 900px;">
+        <h4 class="text-white display-4 mb-4">Fonctionnalités</h4>
+        <ol class="breadcrumb d-flex justify-content-center mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'website:home' %}">Accueil</a></li>
+            <li class="breadcrumb-item active text-primary">Fonctionnalités</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-4"><div class="kpi-card h-100"><h5>Upload de reçu</h5><p class="mb-0">Photo ou collage SMS → extraction structurée (montant, réf, canal, payeur).</p></div></div>
+        <div class="col-md-6 col-lg-4"><div class="kpi-card h-100"><h5>Réconciliation</h5><p class="mb-0">Cascade AUTO_REF, AUTO_MONTANT, FUZZY, puis file A_VALIDER.</p></div></div>
+        <div class="col-md-6 col-lg-4"><div class="kpi-card h-100"><h5>RBAC 3 rôles</h5><p class="mb-0">Caissier, Comptable, Gérant — JWT mobile, session web.</p></div></div>
+        <div class="col-md-6 col-lg-4"><div class="kpi-card h-100"><h5>Prévisions</h5><p class="mb-0">Holt-Winters J+7 et J+30 sur 90 jours d'historique.</p></div></div>
+        <div class="col-md-6 col-lg-4"><div class="kpi-card h-100"><h5>Anomalies</h5><p class="mb-0">Règles métier + Isolation Forest, score par paiement.</p></div></div>
+        <div class="col-md-6 col-lg-4"><div class="kpi-card h-100"><h5>Exports</h5><p class="mb-0">CSV / Excel pour le comptable. Admin Django en plan B.</p></div></div>
+    </div>
+</div>
+{% endblock %}

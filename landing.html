@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MoneXa — Tous vos comptes Mobile Money, une seule vérité</title>
+  <meta name="description" content="MoneXa centralise Mixx by Yas, Moov Money et la banque pour les TPE/PME ouest-africaines. L'IA extrait vos preuves de paiement et réconcilie automatiquement.">
+  <link rel="icon" type="image/png" href="MONEXA_2_without_slogan.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0b1f4d;
+      --blue: #1a5ad7;
+      --orange: #f5a000;
+      --ink: #12203a;
+      --muted: #5b6b86;
+      --line: #e4e9f2;
+      --bg: #f7f8fb;
+      --white: #ffffff;
+      --ok: #0f7a4f;
+      --radius: 16px;
+      --shadow: 0 18px 50px rgba(11, 31, 77, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--white);
+      line-height: 1.55;
+    }
+    img { max-width: 100%; height: auto; }
+    a { color: inherit; }
+    .skip {
+      position: absolute; left: -999px; top: 0;
+      background: var(--navy); color: #fff; padding: .5rem 1rem;
+    }
+    .skip:focus { left: 1rem; top: 1rem; z-index: 80; }
+    .wrap { width: min(1120px, calc(100% - 2rem)); margin-inline: auto; }
+    header.site {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; min-height: 72px;
+    }
+    .brand { display: flex; align-items: center; gap: .75rem; text-decoration: none; }
+    .brand-mark {
+      background: #000;
+      border-radius: 12px;
+      height: 52px;
+      width: 210px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand img {
+      height: 170px;
+      width: auto;
+      max-width: none;
+      display: block;
+    }
+    .nav-links { display: flex; gap: 1.25rem; align-items: center; font-size: .92rem; font-weight: 600; color: var(--muted); }
+    .nav-links a { text-decoration: none; }
+    .nav-links a:hover { color: var(--navy); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px; text-decoration: none; font-weight: 700;
+      padding: .85rem 1.25rem; border: 0; cursor: pointer; font-family: inherit;
+    }
+    .btn-primary { background: var(--orange); color: var(--navy); }
+    .btn-primary:hover { filter: brightness(.96); }
+    .btn-ghost { background: transparent; color: var(--navy); border: 1px solid var(--line); }
+    .menu-btn {
+      display: none; background: none; border: 1px solid var(--line);
+      border-radius: 10px; padding: .4rem .6rem; font-weight: 700;
+    }
+    .hero {
+      padding: 3.5rem 0 2.5rem;
+      background:
+        radial-gradient(900px 420px at 90% -10%, rgba(245,160,0,.16), transparent 60%),
+        radial-gradient(700px 380px at 0% 20%, rgba(26,90,215,.08), transparent 55%),
+        var(--white);
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1.05fr .95fr; gap: 2.5rem; align-items: center;
+    }
+    .eyebrow {
+      color: var(--blue); font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; font-size: .75rem; margin-bottom: .8rem;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.08;
+      letter-spacing: -.03em; margin-bottom: 1rem;
+    }
+    h1 span { color: var(--orange); }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 36rem; margin-bottom: 1.5rem; }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; }
+    .trust { display: flex; flex-wrap: wrap; gap: .6rem; color: var(--muted); font-size: .85rem; font-weight: 600; }
+    .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: .35rem .7rem; }
+    .mock {
+      background: var(--white); border: 1px solid var(--line); border-radius: 20px;
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .mock-top { background: var(--navy); color: #fff; padding: .7rem 1rem; display: flex; justify-content: space-between; align-items: center; font-size: .8rem; }
+    .dots { display: flex; gap: .35rem; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; background: #4b628f; display: block; }
+    .mock-body { padding: 1rem; background: var(--bg); }
+    .kpis { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: .7rem; margin-bottom: .8rem; }
+    .kpi { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: .8rem; }
+    .kpi small { color: var(--muted); font-size: .72rem; font-weight: 600; }
+    .kpi strong { display: block; font-size: 1.05rem; margin-top: .2rem; }
+    .bars { display: grid; gap: .45rem; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: .85rem; margin-bottom: .8rem; }
+    .bar-row { display: grid; grid-template-columns: 92px 1fr 72px; gap: .5rem; align-items: center; font-size: .78rem; font-weight: 600; }
+    .track { height: 8px; background: #edf1f7; border-radius: 99px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 99px; }
+    .fill.mixx { width: 62%; background: var(--blue); }
+    .fill.moov { width: 28%; background: var(--orange); }
+    .fill.bank { width: 10%; background: #8ea0bf; }
+    table.mock-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; font-size: .78rem; }
+    table.mock-table th { text-align: left; color: var(--muted); font-weight: 600; padding: .55rem .7rem; background: #f3f6fb; }
+    table.mock-table td { padding: .55rem .7rem; border-top: 1px solid var(--line); }
+    .ok { color: var(--ok); font-weight: 700; }
+    .wait { color: #b45309; font-weight: 700; }
+    section { padding: 4.2rem 0; }
+    section.alt { background: var(--bg); }
+    .section-head { max-width: 40rem; margin-bottom: 2rem; }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.02em; margin-bottom: .6rem; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .card {
+      background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 1.25rem; box-shadow: 0 8px 24px rgba(11,31,77,.04);
+    }
+    .icon {
+      width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+      background: rgba(26,90,215,.1); color: var(--blue); font-weight: 800; margin-bottom: .8rem;
+    }
+    .icon.orange { background: rgba(245,160,0,.16); color: #b45309; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; counter-reset: step; }
+    .step { position: relative; padding: 1.3rem; background: #fff; border-radius: var(--radius); border: 1px solid var(--line); }
+    .step::before {
+      counter-increment: step; content: counter(step);
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--navy); color: #fff; display: grid; place-items: center;
+      font-weight: 800; margin-bottom: .8rem;
+    }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .diff ul { list-style: none; display: grid; gap: .55rem; }
+    .diff li { padding-left: 1.4rem; position: relative; }
+    .diff .no li::before { content: "–"; position: absolute; left: 0; color: #b42318; font-weight: 800; }
+    .diff .yes li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
+    .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; align-items: stretch; }
+    .price { padding: 1.4rem; border-radius: 20px; border: 1px solid var(--line); background: #fff; }
+    .price.featured { border-color: var(--orange); box-shadow: var(--shadow); transform: translateY(-6px); }
+    .price .amount { font-size: 1.8rem; font-weight: 800; margin: .4rem 0; }
+    .price ul { list-style: none; margin: 1rem 0 1.2rem; color: var(--muted); display: grid; gap: .4rem; font-size: .92rem; }
+    .team { display: flex; gap: 1rem; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem; }
+    .team p { color: var(--muted); }
+    form.demo {
+      display: grid; gap: .7rem; max-width: 480px;
+    }
+    input, textarea {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px;
+      padding: .85rem 1rem; font: inherit;
+    }
+    footer {
+      background: var(--navy); color: #d5def0; padding: 2.2rem 0 1.4rem;
+    }
+    footer .foot-logo {
+      height: 48px;
+      width: 190px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    footer .foot-logo img {
+      height: 150px;
+      width: auto;
+      max-width: none;
+    }
+    .foot-grid { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .fine { margin-top: 1.2rem; font-size: .8rem; color: #9aabc9; }
+    @media (max-width: 900px) {
+      .hero-grid, .cards, .steps, .features, .diff, .pricing { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr 1fr; }
+      .price.featured { transform: none; }
+      .nav-links { display: none; }
+      .nav-links.open {
+        display: flex; flex-direction: column; position: absolute; top: 72px; left: 0; right: 0;
+        background: #fff; border-bottom: 1px solid var(--line); padding: 1rem;
+      }
+      .menu-btn { display: inline-flex; }
+      .nav { position: relative; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#contenu">Aller au contenu</a>
+  <header class="site">
+    <div class="wrap nav">
+      <a class="brand" href="#top">
+        <span class="brand-mark">
+          <img src="MONEXA_LOGO.png" width="220" height="72" alt="MoneXa — Votre trésorerie centralisée">
+        </span>
+      </a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+      <nav id="menu" class="nav-links">
+        <a href="#probleme">Problème</a>
+        <a href="#solution">Solution</a>
+        <a href="#fonctionnalites">Produit</a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#demo" class="btn btn-primary">Demander une démo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <section class="hero" id="top">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">SaaS B2B · Afrique de l’Ouest</p>
+          <h1>Tous vos comptes Mobile Money, <span>une seule vérité</span>.</h1>
+          <p class="lead">MoneXa centralise Mixx by Yas, Moov Money et la banque, extrait vos preuves de paiement par IA, et réconcilie automatiquement — pour que la caisse d’une TPE togolaise arrête de vivre dans WhatsApp et Excel.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#demo">Demander une démo</a>
+            <a class="btn btn-ghost" href="#solution">Voir le parcours</a>
+          </div>
+          <div class="trust">
+            <span class="chip">Mixx by Yas</span>
+            <span class="chip">Moov Money</span>
+            <span class="chip">Banque · FCFA</span>
+            <span class="chip">Lomé · ESIG Tech Arena 2026</span>
+          </div>
+        </div>
+        <aside class="mock" aria-label="Aperçu du tableau de bord MoneXa">
+          <div class="mock-top">
+            <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+            <span>Tableau de bord · Boutique Demo Lomé</span>
+          </div>
+          <div class="mock-body">
+            <div class="kpis">
+              <div class="kpi"><small>Solde consolidé</small><strong>4 368 500 F</strong></div>
+              <div class="kpi"><small>À valider</small><strong>3</strong></div>
+              <div class="kpi"><small>Anomalies</small><strong>0</strong></div>
+            </div>
+            <div class="bars" aria-hidden="true">
+              <div class="bar-row"><span>Mixx by Yas</span><div class="track"><div class="fill mixx"></div></div><span>62%</span></div>
+              <div class="bar-row"><span>Moov Money</span><div class="track"><div class="fill moov"></div></div><span>28%</span></div>
+              <div class="bar-row"><span>Banque</span><div class="track"><div class="fill bank"></div></div><span>10%</span></div>
+            </div>
+            <table class="mock-table">
+              <thead><tr><th>Réf</th><th>Montant</th><th>Statut</th></tr></thead>
+              <tbody>
+                <tr><td>TX2049183</td><td>3 500 F</td><td class="ok">Rapproché</td></tr>
+                <tr><td>TXM882001</td><td>85 000 F</td><td class="wait">À valider</td></tr>
+                <tr><td>TX9001457</td><td>750 000 F</td><td class="ok">Rapproché</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="probleme" class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Le quotidien des TPE</p>
+          <h2>La trésorerie est réelle. Les outils, non.</h2>
+          <p>En Afrique de l’Ouest, l’encaissement passe par le téléphone. La compta, elle, reste un tableur le dimanche soir.</p>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <div class="icon">1</div>
+            <h3>Paiements fragmentés</h3>
+            <p>Mixx, Moov, virement, espèces : chaque canal a son SMS, son solde, sa vérité. Personne ne voit le fonds de roulement d’un coup d’œil.</p>
+          </article>
+          <article class="card">
+            <div class="icon">2</div>
+            <h3>Rapprochement manuel</h3>
+            <p>Le comptable recopie les reçus. Le caissier photographie. Les doublons passent. Une facture de 50 000 F se perd dans 200 SMS.</p>
+          </article>
+          <article class="card">
+            <div class="icon orange">3</div>
+            <h3>Erreurs et fuites</h3>
+            <p>Écart de montant, paiement nocturne, référence déjà vue : sans journal immuable, la fraude interne est invisible jusqu’à l’inventaire.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="solution">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Comment ça marche</p>
+          <h2>Trois gestes. La caisse est à jour.</h2>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <h3>Créer la facture</h3>
+            <p>Le caissier saisit le client et le montant. MoneXa numérote (FACT-2026-XXXX) et pose l’échéance.</p>
+          </article>
+          <article class="step">
+            <h3>Photographier le reçu</h3>
+            <p>SMS Mixx, ticket Moov ou relevé : l’IA lit montant, référence, date et payeur. Coller le texte SMS reste possible hors réseau.</p>
+          </article>
+          <article class="step">
+            <h3>Réconciliation IA</h3>
+            <p>Matching en cascade (réf, montant, nom). File « à valider » pour le comptable. Anomalie si ça ne colle pas.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="fonctionnalites" class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Le produit</p>
+          <h2>Ce que voit le gérant le lundi matin</h2>
+        </div>
+        <div class="features">
+          <article class="card"><h3>Dashboard unifié</h3><p>Un solde Mixx + Moov + banque, en FCFA. Pas trois applications, pas trois carnets.</p></article>
+          <article class="card"><h3>Moteur IA OCR + NLP</h3><p>Vision sur la photo, parseur sur le SMS. Validation stricte : on n’invente jamais un montant.</p></article>
+          <article class="card"><h3>Rôles et audit immuable</h3><p>Caissier, comptable, gérant. Chaque écriture est hash-chainée SHA-256 : une falsification casse la chaîne.</p></article>
+          <article class="card"><h3>Prévision de trésorerie</h3><p>Holt-Winters à J+7 et J+30, pour décider un stock ou un loyer avant la panne de caisse.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="difference">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Pourquoi MoneXa</p>
+          <h2>Excel n’a jamais vu un SMS Mixx.</h2>
+        </div>
+        <div class="diff">
+          <div class="card no">
+            <h3>Logiciel comptable classique</h3>
+            <ul>
+              <li>Pensé pour la banque européenne, pas le Mobile Money</li>
+              <li>Saisie manuelle des pièces</li>
+              <li>Pas de file « à valider » terrain / siège</li>
+              <li>Audit modifiable dans la base</li>
+            </ul>
+          </div>
+          <div class="card yes">
+            <h3>Conçu à Lomé, pour le Mobile Money</h3>
+            <ul>
+              <li>Mixx by Yas, Moov Money, banque, espèces — même écran</li>
+              <li>Preuve photo ou SMS, extraite puis rapprochée</li>
+              <li>Offline-first sur le téléphone du caissier</li>
+              <li>Journal immuable, démontrable en live au jury</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tarifs" class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Tarifs</p>
+          <h2>Simple, en FCFA, sans surprise.</h2>
+        </div>
+        <div class="pricing">
+          <article class="price">
+            <h3>Starter</h3>
+            <p class="amount">9 900 F<span style="font-size:1rem;font-weight:600;color:var(--muted)"> / mois</span></p>
+            <p>1 point de vente, 1 caissier, 1 gérant.</p>
+            <ul>
+              <li>Réconciliation Mixx / Moov</li>
+              <li>Upload photo + collage SMS</li>
+              <li>Dashboard soldes</li>
+            </ul>
+            <a class="btn btn-ghost" href="#demo">Choisir Starter</a>
+          </article>
+          <article class="price featured">
+            <h3>Pro</h3>
+            <p class="amount">29 900 F<span style="font-size:1rem;font-weight:600;color:var(--muted)"> / mois</span></p>
+            <p>L’offre de la PME qui veut un vrai CFO.</p>
+            <ul>
+              <li>Tout Starter</li>
+              <li>Comptable + file à valider</li>
+              <li>TresorIA + prévisions J+30</li>
+              <li>Audit immuable + exports</li>
+            </ul>
+            <a class="btn btn-primary" href="#demo">Choisir Pro</a>
+          </article>
+          <article class="price">
+            <h3>Cabinet comptable</h3>
+            <p class="amount">Sur devis</p>
+            <p>Multi-dossiers, pour le cabinet qui suit 10 à 50 TPE.</p>
+            <ul>
+              <li>Espaces clients séparés</li>
+              <li>Exports SYSCOHADA</li>
+              <li>Accompagnement onboarding</li>
+            </ul>
+            <a class="btn btn-ghost" href="#demo">Parler au cabinet</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="equipe">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Équipe</p>
+          <h2>MoneXa, ESIG Tech Arena 2026</h2>
+        </div>
+        <div class="team">
+          <div>
+            <p>Équipe produit, backend Django et mobile Flutter. On construit à Lomé un outil que le gérant d’une boutique peut ouvrir ce soir — pas un mémoire déguisé en app.</p>
+            <p style="margin-top:.6rem">Contact : team.monexa@esig.example</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="demo" class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Démo</p>
+          <h2>On vous montre la caisse en 5 minutes.</h2>
+          <p>Laissez un contact. Au Demo Day, on ouvre le parcours : facture, photo de reçu, matching, dashboard.</p>
+        </div>
+        <form class="demo" id="demo-form">
+          <label>Nom de l’entreprise
+            <input type="text" name="company" placeholder="Boutique / cabinet" required autocomplete="organization">
+          </label>
+          <label>Email
+            <input type="email" name="email" placeholder="vous@entreprise.tg" required autocomplete="email">
+          </label>
+          <button class="btn btn-primary" type="submit">Demander une démo</button>
+          <p id="demo-ok" hidden role="status">Demande enregistrée pour la démo. Écrivez-nous : team.monexa@esig.example</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div class="foot-logo">
+          <img src="MONEXA_2_without_slogan.png" width="180" height="48" alt="MoneXa">
+        </div>
+        <div>
+          <p>team.monexa@esig.example</p>
+          <p>Lomé, Togo</p>
+        </div>
+      </div>
+      <p class="fine">© 2026 MoneXa · Présenté à l’ESIG Tech Arena 2026, Défi 2 — Application mobile. Mixx by Yas et Moov Money sont des marques de leurs opérateurs respectifs.</p>
+    </div>
+  </footer>
+  <script>
+    const btn = document.querySelector(".menu-btn");
+    const menu = document.getElementById("menu");
+    btn.addEventListener("click", () => {
+      const open = menu.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => {
+      menu.classList.remove("open");
+      btn.setAttribute("aria-expanded", "false");
+    }));
+    document.getElementById("demo-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      document.getElementById("demo-ok").hidden = false;
+    });
+  </script>
+</body>
+</html>

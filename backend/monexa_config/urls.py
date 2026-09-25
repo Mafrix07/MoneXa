@@ -40,6 +40,8 @@ router.register(r"payments", PaymentViewSet, basename="payment")
 router.register(r"expenses", ExpenseViewSet, basename="expense")
 
 urlpatterns = [
+    path("", include("website.urls")),
+
     # Admin
     path("admin/", admin.site.urls),
 

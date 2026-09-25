@@ -66,6 +66,9 @@ mobile_app/android/local.properties
 mobile_app/android/app/debug/
 mobile_app/android/app/release/
 
+# Vendor HTML Codex (assets recopies dans static/website)
+backend/stocker-1.0.0/
+
 # Env
 .env
 .env.local

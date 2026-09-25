@@ -1,0 +1,56 @@
+:root {
+  --bs-primary: #063082;
+  --bs-primary-rgb: 6, 48, 130;
+  --monexa-navy: #1A2539;
+  --monexa-cream: #FFFBF4;
+  --monexa-gold: #F59E0B;
+}
+
+body {
+  background-color: var(--monexa-cream);
+}
+
+.btn.btn-primary {
+  background-color: var(--monexa-gold) !important;
+  color: var(--monexa-navy) !important;
+  border: none;
+}
+
+.btn.btn-primary:hover {
+  background-color: #d97706 !important;
+  color: #fff !important;
+}
+
+.text-primary,
+h1.text-primary,
+.navbar-brand h1 {
+  color: #063082 !important;
+}
+
+.kpi-card {
+  border-radius: 16px;
+  border: 1px solid #CBD5E1;
+  background: #fff;
+  padding: 1.25rem;
+  height: 100%;
+}
+
+.kpi-card .kpi-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--monexa-navy);
+}
+
+.table-monexa thead {
+  background: #063082;
+  color: #fff;
+}
+
+.auth-card {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid #CBD5E1;
+}

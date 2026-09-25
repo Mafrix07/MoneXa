@@ -1,0 +1,143 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}MoneXa — CFO virtuel pour PME{% endblock %}</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{% static 'website/lib/animate/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'website/lib/lightbox/css/lightbox.min.css' %}" rel="stylesheet">
+    <link href="{% static 'website/lib/owlcarousel/assets/owl.carousel.min.css' %}" rel="stylesheet">
+    <link href="{% static 'website/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'website/css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'website/css/monexa.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="container-fluid topbar bg-light px-5 d-none d-lg-block">
+        <div class="row gx-0 align-items-center">
+            <div class="col-lg-8 text-center text-lg-start mb-2 mb-lg-0">
+                <div class="d-flex flex-wrap">
+                    <span class="text-muted small me-4"><i class="fas fa-map-marker-alt text-primary me-2"></i>Lomé, Togo</span>
+                    <a href="mailto:team.monexa@esig.example" class="text-muted small me-0"><i class="fas fa-envelope text-primary me-2"></i>team.monexa@esig.example</a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+                <div class="d-inline-flex align-items-center" style="height: 45px;">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'website:dashboard' %}"><small class="me-3 text-dark"><i class="fa fa-home text-primary me-2"></i>Tableau de bord</small></a>
+                    <form method="post" action="{% url 'website:logout' %}" class="d-inline">{% csrf_token %}
+                        <button type="submit" class="btn btn-link p-0 text-dark"><small><i class="fas fa-power-off text-primary me-2"></i>Déconnexion</small></button>
+                    </form>
+                    {% else %}
+                    <a href="{% url 'website:login' %}"><small class="me-3 text-dark"><i class="fa fa-sign-in-alt text-primary me-2"></i>Connexion</small></a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid position-relative p-0">
+        <nav class="navbar navbar-expand-lg navbar-light px-4 px-lg-5 py-3 py-lg-0">
+            <a href="{% url 'website:home' %}" class="navbar-brand p-0">
+                <h1 class="text-primary"><i class="fas fa-wallet me-3"></i>MoneXa</h1>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                <span class="fa fa-bars"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <div class="navbar-nav ms-auto py-0">
+                    <a href="{% url 'website:home' %}" class="nav-item nav-link {% if nav == 'home' %}active{% endif %}">Accueil</a>
+                    <a href="{% url 'website:about' %}" class="nav-item nav-link {% if nav == 'about' %}active{% endif %}">À propos</a>
+                    <a href="{% url 'website:services' %}" class="nav-item nav-link {% if nav == 'services' %}active{% endif %}">Fonctionnalités</a>
+                    <a href="{% url 'website:faq' %}" class="nav-item nav-link {% if nav == 'faq' %}active{% endif %}">FAQ</a>
+                    <a href="{% url 'website:contact' %}" class="nav-item nav-link {% if nav == 'contact' %}active{% endif %}">Contact</a>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'website:dashboard' %}" class="nav-item nav-link {% if nav == 'dashboard' %}active{% endif %}">Trésorerie</a>
+                    <a href="{% url 'website:payments' %}" class="nav-item nav-link {% if nav == 'payments' %}active{% endif %}">Paiements</a>
+                    {% endif %}
+                </div>
+                {% if user.is_authenticated %}
+                <a href="{% url 'website:dashboard' %}" class="btn btn-primary rounded-pill py-2 px-4 my-3 my-lg-0 flex-shrink-0">Espace métier</a>
+                {% else %}
+                <a href="{% url 'website:login' %}" class="btn btn-primary rounded-pill py-2 px-4 my-3 my-lg-0 flex-shrink-0">Connexion</a>
+                {% endif %}
+            </div>
+        </nav>
+        {% block hero %}{% endblock %}
+    </div>
+
+    {% if messages %}
+    <div class="container pt-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <div class="container-fluid footer py-5">
+        <div class="container py-5">
+            <div class="row g-5">
+                <div class="col-md-6 col-xl-4">
+                    <div class="footer-item">
+                        <h4 class="text-white mb-4">MoneXa</h4>
+                        <p class="text-white mb-0">CFO virtuel pour PME ouest-africaines : reçus Mobile Money, réconciliation IA, audit immuable, TresorIA.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="footer-item">
+                        <h4 class="text-white mb-4">Liens</h4>
+                        <a href="{% url 'website:services' %}"><i class="fas fa-angle-right me-2"></i> Fonctionnalités</a>
+                        <a href="{% url 'website:login' %}"><i class="fas fa-angle-right me-2"></i> Connexion web</a>
+                        <a href="/admin/"><i class="fas fa-angle-right me-2"></i> Django Admin</a>
+                        <a href="/api/schema/swagger-ui/"><i class="fas fa-angle-right me-2"></i> API Swagger</a>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                    <div class="footer-item">
+                        <h4 class="text-white mb-4">Contact</h4>
+                        <p class="text-white mb-0"><i class="fas fa-map-marker-alt text-primary me-2"></i>ESIG Tech Arena 2026 — Lomé</p>
+                        <p class="text-white mb-0"><i class="fas fa-envelope text-primary me-2"></i>team.monexa@esig.example</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid copyright py-4">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-md-0">
+                    <span class="text-body"><span class="text-white">MoneXa</span> — ESIG Tech Arena 2026, Défi 2.</span>
+                </div>
+                <div class="col-md-6 text-center text-md-end text-body">
+                    Designed By <a class="border-bottom text-white" href="https://htmlcodex.com">HTML Codex</a>
+                    Distributed By <a class="border-bottom text-white" href="https://themewagon.com">ThemeWagon</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <a href="#" class="btn btn-primary btn-lg-square rounded-circle back-to-top"><i class="fa fa-arrow-up"></i></a>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'website/lib/wow/wow.min.js' %}"></script>
+    <script src="{% static 'website/lib/easing/easing.min.js' %}"></script>
+    <script src="{% static 'website/lib/waypoints/waypoints.min.js' %}"></script>
+    <script src="{% static 'website/lib/counterup/counterup.min.js' %}"></script>
+    <script src="{% static 'website/lib/lightbox/js/lightbox.min.js' %}"></script>
+    <script src="{% static 'website/lib/owlcarousel/owl.carousel.min.js' %}"></script>
+    <script src="{% static 'website/js/main.js' %}"></script>
+</body>
+</html>

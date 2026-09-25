@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "auditing",
     "reporting",
     "assistant",
+    "website",
 ]
 
 MIDDLEWARE = [
@@ -131,8 +132,13 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 # ──────────────────────────────────────────────────────────────────────────
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+LOGIN_URL = "/connexion/"
+LOGIN_REDIRECT_URL = "/tableau-de-bord/"
+LOGOUT_REDIRECT_URL = "/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

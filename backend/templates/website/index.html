@@ -1,0 +1,67 @@
+{% extends "website/base.html" %}
+{% load static %}
+{% block title %}MoneXa — CFO virtuel pour PME ouest-africaines{% endblock %}
+{% block hero %}
+<div class="header-carousel owl-carousel">
+    <div class="header-carousel-item">
+        <img src="{% static 'website/img/carousel-1.jpg' %}" class="img-fluid w-100" alt="MoneXa">
+        <div class="carousel-caption">
+            <div class="container">
+                <div class="row gy-0 gx-5">
+                    <div class="col-lg-0 col-xl-5"></div>
+                    <div class="col-xl-7 animated fadeInLeft">
+                        <div class="text-sm-center text-md-end">
+                            <h4 class="text-primary text-uppercase fw-bold mb-4">ESIG Tech Arena 2026</h4>
+                            <h1 class="display-4 text-uppercase text-white mb-4">Votre trésorerie Mobile Money, réconciliée par l'IA</h1>
+                            <p class="mb-5 fs-5">Photographiez un reçu T-Money, Moov ou Flooz. MoneXa extrait, rapproche et alerte sur les anomalies — même hors ligne.</p>
+                            <div class="d-flex justify-content-center justify-content-md-end flex-shrink-0 mb-4">
+                                <a class="btn btn-light rounded-pill py-3 px-4 px-md-5 me-2" href="{% url 'website:services' %}">Découvrir</a>
+                                <a class="btn btn-primary rounded-pill py-3 px-4 px-md-5 ms-2" href="{% url 'website:login' %}">Connexion</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="header-carousel-item">
+        <img src="{% static 'website/img/carousel-2.jpg' %}" class="img-fluid w-100" alt="TresorIA">
+        <div class="carousel-caption">
+            <div class="container">
+                <div class="row g-5">
+                    <div class="col-12 animated fadeInUp">
+                        <div class="text-center">
+                            <h4 class="text-primary text-uppercase fw-bold mb-4">TresorIA</h4>
+                            <h1 class="display-4 text-uppercase text-white mb-4">Posez une question, obtenez vos KPIs</h1>
+                            <p class="mb-5 fs-5">Jamais de SQL généré par le LLM. Uniquement des indicateurs pré-calculés, en français.</p>
+                            <a class="btn btn-primary rounded-pill py-3 px-5" href="{% url 'website:dashboard' %}">Tableau de bord</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-6">
+                <h4 class="text-primary">Pourquoi MoneXa</h4>
+                <h1 class="display-5 mb-4">La réconciliation manuelle des SMS, c'est fini</h1>
+                <p>Les PME togolaises encaissent via T-Money, Moov Money et Flooz. MoneXa photographie le reçu, extrait le montant et la référence, rapproche la facture et journalise chaque action en SHA-256.</p>
+                <a class="btn btn-primary rounded-pill py-3 px-5" href="{% url 'website:about' %}">Notre approche</a>
+            </div>
+            <div class="col-lg-6">
+                <div class="row g-4">
+                    <div class="col-sm-6"><div class="kpi-card"><div class="text-primary mb-2"><i class="fa fa-camera fa-2x"></i></div><h5>Extraction Vision</h5><p class="mb-0">GPT-4o-mini / Gemini sur la photo du SMS.</p></div></div>
+                    <div class="col-sm-6"><div class="kpi-card"><div class="text-primary mb-2"><i class="fa fa-link fa-2x"></i></div><h5>Matching 4 niveaux</h5><p class="mb-0">Référence, montant, fuzzy, file à valider.</p></div></div>
+                    <div class="col-sm-6"><div class="kpi-card"><div class="text-primary mb-2"><i class="fa fa-shield-alt fa-2x"></i></div><h5>Audit immuable</h5><p class="mb-0">Chaîne de hash : toute falsification se voit.</p></div></div>
+                    <div class="col-sm-6"><div class="kpi-card"><div class="text-primary mb-2"><i class="fa fa-comments fa-2x"></i></div><h5>TresorIA</h5><p class="mb-0">Chat CFO sur 15 KPIs, sans accès base.</p></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
