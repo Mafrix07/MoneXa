@@ -15,6 +15,7 @@ class UploadRepository {
   }) async {
     try {
       final formData = FormData.fromMap({
+        'kind': 'image',
         'image': MultipartFile.fromBytes(
           imageBytes,
           filename: filename.isNotEmpty ? filename : 'receipt.jpg',
@@ -22,19 +23,20 @@ class UploadRepository {
       });
 
       final response = await _client.dio.post(
-        ApiEndpoints.paymentEvidence,
+        ApiEndpoints.evidence,
         data: formData,
         options: Options(
           headers: {'Content-Type': 'multipart/form-data'},
         ),
       );
-
-      final result = Map<String, dynamic>.from(response.data);
+      final result = _unwrapEvidence(response.data);
       _cacheNewPaymentLocally(result);
       return result;
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        throw Exception("Doublon détecté : Cette référence de paiement a déjà été enregistrée.");
+        final data = e.response?.data;
+        final detail = data is Map ? (data['detail'] ?? 'Doublon potentiel.') : 'Doublon potentiel.';
+        throw Exception(detail);
       }
       final isNetworkError = e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
@@ -54,13 +56,18 @@ class UploadRepository {
   Future<Map<String, dynamic>> uploadManualText(String text) async {
     try {
       final response = await _client.dio.post(
-        ApiEndpoints.paymentManualText,
-        data: {'text': text.trim()},
+        ApiEndpoints.evidence,
+        data: {'kind': 'sms', 'text': text.trim()},
       );
-      final result = Map<String, dynamic>.from(response.data);
+      final result = _unwrapEvidence(response.data);
       _cacheNewPaymentLocally(result);
       return result;
     } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        final data = e.response?.data;
+        final detail = data is Map ? (data['detail'] ?? 'Doublon potentiel.') : 'Doublon potentiel.';
+        throw Exception(detail);
+      }
       final isNetworkError = e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
           e.response == null;
@@ -73,6 +80,17 @@ class UploadRepository {
       final msg = e.response?.data?['detail'] ?? "Erreur lors du traitement du texte.";
       throw Exception(msg);
     }
+  }
+
+  Map<String, dynamic> _unwrapEvidence(dynamic raw) {
+    final map = Map<String, dynamic>.from(raw as Map);
+    if (map['payment'] is Map) {
+      final payment = Map<String, dynamic>.from(map['payment'] as Map);
+      payment['explain'] = map['explain'];
+      payment['disclaimer'] = map['disclaimer'];
+      return payment;
+    }
+    return map;
   }
 
   Map<String, dynamic> _parseLocalSmsOrMock(String? text) {

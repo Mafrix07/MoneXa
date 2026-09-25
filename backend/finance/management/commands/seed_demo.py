@@ -219,6 +219,10 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.WARNING(f"  [warn] Previsions non generees: {e}"))
 
+        from finance.services.demo_sources import ensure_default_sources
+        ensure_default_sources(gerant)
+        self.stdout.write("  [ok] Sources financieres (connecteurs SIMULES)")
+
         self.stdout.write(self.style.SUCCESS("\nSeed demo termine."))
         self.stdout.write("\nComptes de test :")
         self.stdout.write("  Gérant     : gerant@monexa.tg / Monexa2026!")

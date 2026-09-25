@@ -15,7 +15,7 @@ from finance.services.forecast import forecast_cashflow
 from finance.services.anomalies import detect_anomalies, score_isolation_forest
 from auditing.models import AuditLog
 from auditing.serializers import AuditLogSerializer
-from .services import compute_kpis
+from .services import compute_kpis, explain_forecast
 from .serializers import KPISerializer
 
 
@@ -46,37 +46,68 @@ class ForecastView(APIView):
                 "confidence_high": cached.confidence_high,
                 "model": "Holt-Winters (cached)",
                 "generated_at": cached.generated_at,
+                "explanation": explain_forecast(days=days),
             })
         except ForecastCache.DoesNotExist:
             forecast = forecast_cashflow(days=days)
+            forecast["explanation"] = explain_forecast(days=days)
             return Response(forecast)
 
 
 class AnomaliesView(APIView):
-    """GET /api/anomalies/ — liste des anomalies (GERANT seulement)."""
+    """GET /api/anomalies/ — centre Guard (Gérant). Jamais le mot « fraude » auto."""
     permission_classes = [IsGerant]
 
     def get(self, request):
-        # Récupère paiements en anomalie
-        anomalies_payments = Payment.objects.filter(status="ANOMALIE").order_by("-paid_at")[:50]
-        result = []
-        for p in anomalies_payments:
+        grouped = {
+            "doublon_potentiel": [],
+            "paiement_non_rattache": [],
+            "montant_incoherent": [],
+            "anomalie_comportementale": [],
+        }
+        qs = Payment.objects.filter(
+            status__in=["ANOMALIE", "NON_RATTACHE"]
+        ).order_by("-paid_at")[:80]
+        seen = set()
+        for p in qs:
             for a in detect_anomalies(p):
-                result.append({
+                item = {
                     "payment_id": p.id,
                     "provider_ref": p.provider_ref,
                     "amount": float(p.amount),
                     "channel": p.channel,
                     "paid_at": p.paid_at.isoformat(),
+                    "label": "Anomalie détectée",
                     **a,
-                })
+                }
+                key = (p.id, a.get("type"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                t = (a.get("type") or "").lower()
+                if "écart" in t or "ecart" in t:
+                    grouped["montant_incoherent"].append(item)
+                elif "sans facture" in t or "non rattach" in t:
+                    grouped["paiement_non_rattache"].append(item)
+                elif "nocturne" in t or "fenêtre" in t or "fenetre" in t:
+                    grouped["anomalie_comportementale"].append(item)
+                else:
+                    grouped["anomalie_comportementale"].append(item)
 
-        # Add Isolation Forest flagged payments
         iflagged = score_isolation_forest()
+        for row in iflagged:
+            row["label"] = "Anomalie détectée"
+            row["type"] = "Score comportemental (Isolation Forest)"
+            grouped["anomalie_comportementale"].append(row)
+
+        total = sum(len(v) for v in grouped.values())
         return Response({
-            "rule_based_anomalies": result,
-            "ml_flagged_payments": iflagged,
-            "total": len(result) + len(iflagged),
+            "categories": grouped,
+            "total": total,
+            "disclaimer": (
+                "Détection de cohérence interne et d'atypie statistique. "
+                "Ce n'est pas une qualification de fraude."
+            ),
         })
 
 

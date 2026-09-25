@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:monexa/core/theme/app_colors.dart';
 import 'package:monexa/shared/utils/formatters.dart';
 import 'package:monexa/shared/widgets/status_badge.dart';
@@ -143,7 +144,10 @@ class _PaymentsScreenState extends State<PaymentsScreen> with SingleTickerProvid
   Widget _buildPaymentCard(BuildContext context, PaymentItem payment, bool canValidate) {
     final channelColor = AppColors.getChannelColor(payment.channel);
 
-    return Container(
+    return InkWell(
+      onTap: () => context.push('/payments/${payment.id}/explain'),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -315,6 +319,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> with SingleTickerProvid
           ],
         ],
       ),
+    ),
     );
   }
 }

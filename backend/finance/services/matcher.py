@@ -69,6 +69,24 @@ def _find_by_fuzzy_payer(payment: Payment) -> Optional[Invoice]:
     return best_match
 
 
+def _date_compatible(payment: Payment, invoice: Invoice) -> bool:
+    paid = payment.paid_at.date()
+    issued = invoice.issue_date
+    return issued <= paid <= issued + timedelta(days=7)
+
+
+def _name_score(payment: Payment, invoice: Invoice) -> float:
+    score = max(
+        _similarity(payment.payer_name, invoice.client_name),
+        _similarity(payment.payer_phone, invoice.client_phone),
+    )
+    payer = (payment.payer_name or "").lower()
+    client = (invoice.client_name or "").lower()
+    if client and payer and (client in payer or payer in client):
+        score = max(score, 0.95)
+    return score
+
+
 def match_payment(payment: Payment) -> Tuple[PaymentStatus, Optional[Invoice], MatchMethod]:
     """
     Run the 4-level reconciliation cascade.
@@ -84,6 +102,9 @@ def match_payment(payment: Payment) -> Tuple[PaymentStatus, Optional[Invoice], M
     # Level 2 — amount + 7 days window
     invoice = _find_by_amount_and_date(payment)
     if invoice:
+        # Montant + date + contrepartie très proche → auto (HIGH), sinon file comptable
+        if _name_score(payment, invoice) >= 0.9 and _date_compatible(payment, invoice):
+            return PaymentStatus.RECONCILIE, invoice, MatchMethod.AUTO_MONTANT
         return PaymentStatus.A_VALIDER, invoice, MatchMethod.AUTO_MONTANT
 
     # Level 3 — fuzzy payer
@@ -93,3 +114,105 @@ def match_payment(payment: Payment) -> Tuple[PaymentStatus, Optional[Invoice], M
 
     # Level 4 — no match
     return PaymentStatus.NON_RATTACHE, None, MatchMethod.MANUEL
+
+
+def _criteria_for(payment: Payment, invoice: Optional[Invoice]) -> list[dict]:
+    if invoice is None:
+        return [
+            {"key": "invoice", "label": "Facture candidate", "matched": False, "value": "Aucune"},
+        ]
+    ref_in_provider = bool(invoice.reference and invoice.reference in (payment.provider_ref or ""))
+    ref_in_text = bool(invoice.reference and invoice.reference in (payment.raw_text or ""))
+    amount_ok = invoice.amount == payment.amount
+    name_ok = _name_score(payment, invoice) >= 0.8
+    date_ok = _date_compatible(payment, invoice)
+    return [
+        {
+            "key": "reference",
+            "label": "Référence correspondante",
+            "matched": ref_in_provider or ref_in_text,
+            "value": invoice.reference,
+        },
+        {
+            "key": "amount",
+            "label": "Montant identique",
+            "matched": amount_ok,
+            "value": f"{payment.amount} / {invoice.amount} FCFA",
+        },
+        {
+            "key": "counterparty",
+            "label": "Client correspondant",
+            "matched": name_ok,
+            "value": f"{payment.payer_name} ↔ {invoice.client_name}",
+        },
+        {
+            "key": "date",
+            "label": "Date compatible (fenêtre 7 jours)",
+            "matched": date_ok,
+            "value": f"payé {payment.paid_at.date().isoformat()} / émis {invoice.issue_date.isoformat()}",
+        },
+    ]
+
+
+def _confidence_from_criteria(criteria: list[dict], method: str, status: str) -> float:
+    matched = sum(1 for c in criteria if c.get("matched"))
+    total = max(len(criteria), 1)
+    score = matched / total
+    if method == MatchMethod.AUTO_REF and status == PaymentStatus.RECONCILIE:
+        score = max(score, 0.95)
+    elif method == MatchMethod.AUTO_MONTANT and status == PaymentStatus.RECONCILIE:
+        score = max(score, 0.90)
+    elif method == MatchMethod.AUTO_MONTANT:
+        score = min(max(score, 0.55), 0.85)
+    elif method == MatchMethod.FUZZY:
+        score = min(max(score, 0.40), 0.75)
+    elif status == PaymentStatus.NON_RATTACHE:
+        score = min(score, 0.25)
+    return round(float(score), 2)
+
+
+def explain_payment(payment: Payment) -> dict:
+    """Explication réelle du rapprochement — aucun critère inventé."""
+    invoice = payment.invoice
+    if invoice is None:
+        # Recalcule un candidat pour expliquer l'échec, sans l'écrire
+        status, invoice, method = match_payment(payment)
+    else:
+        status, method = payment.status, payment.match_method
+
+    criteria = _criteria_for(payment, invoice)
+    confidence = _confidence_from_criteria(criteria, method, payment.status)
+    if confidence >= 0.9 and payment.status == PaymentStatus.RECONCILIE:
+        level, label = "HIGH", "Rapprochement automatique"
+    elif payment.status == PaymentStatus.A_VALIDER:
+        level, label = "MEDIUM", "À valider (intervention humaine)"
+    else:
+        level, label = "LOW", "Non rapproché"
+
+    return {
+        "payment_id": payment.id,
+        "provider_ref": payment.provider_ref,
+        "amount": str(payment.amount),
+        "payer_name": payment.payer_name,
+        "channel": payment.channel,
+        "status": payment.status,
+        "match_method": method,
+        "confidence": confidence,
+        "confidence_level": level,
+        "decision_label": label,
+        "invoice": (
+            {
+                "id": invoice.id,
+                "reference": invoice.reference,
+                "client_name": invoice.client_name,
+                "amount": str(invoice.amount),
+            }
+            if invoice
+            else None
+        ),
+        "criteria": criteria,
+        "disclaimer": (
+            "Score calculé à partir des critères ci-dessus. "
+            "Ce n'est pas une preuve d'authenticité de la capture."
+        ),
+    }

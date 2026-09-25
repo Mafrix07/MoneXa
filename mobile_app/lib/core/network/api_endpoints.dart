@@ -22,6 +22,12 @@ class ApiEndpoints {
   static const String paymentEvidence = '/api/payments/evidence/';
   static const String paymentManualText = '/api/payments/manual-text/';
   static String validatePayment(int id) => '/api/payments/$id/validate/';
+  static String explainPayment(int id) => '/api/payments/$id/explain/';
+  static String reviewPayment(int id) => '/api/payments/$id/review/';
+  static const String evidence = '/api/evidence/';
+  static const String sources = '/api/sources/';
+  static String syncSource(int id) => '/api/sources/$id/sync/';
+  static String healthSource(int id) => '/api/sources/$id/health/';
 
   static const String accounts = '/api/accounts/';
   static const String expenses = '/api/expenses/';

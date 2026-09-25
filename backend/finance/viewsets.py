@@ -10,18 +10,29 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from accounts.permissions import (
-    IsCaissierOrHigher, IsComptableOrHigher, IsOwnerOrComptableOrHigher,
+    IsCaissierOrHigher, IsComptableOrHigher, IsGerant, IsOwnerOrComptableOrHigher,
 )
-from .models import Account, Invoice, Payment, Expense, ForecastCache, MatchMethod, PaymentStatus
+from .models import (
+    Account, Invoice, Payment, Expense, FinancialSource, IntegrationMethod,
+    ConnectorKind, SourceStatus, Channel, MatchMethod, PaymentStatus,
+)
 from .serializers import (
     AccountSerializer, InvoiceSerializer, PaymentSerializer, ExpenseSerializer,
+    FinancialSourceSerializer, ConnectorSyncSerializer,
 )
 from .services.ai_pipeline import extract_payment_from_image, extract_payment_from_text
-from .services.matcher import match_payment
+from .services.matcher import match_payment, explain_payment
 from .services.anomalies import detect_anomalies
 from .services.categorize import categorize_expense
+from .services.ingest import duplicate_response, existing_by_ref, ingest_normalized
+from .services.sync import sync_source
+from .connectors.csv_connector import CSVConnector
+from .connectors.sms_connector import SMSConnector
+from .connectors.manual import ManualConnector
+from .connectors.base import NormalizedTransaction
 
 
 class AccountViewSet(viewsets.ReadOnlyModelViewSet):
@@ -130,12 +141,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             # Check for duplicate provider_ref
-            if Payment.objects.filter(provider_ref=extracted["reference"]).exists():
+            existing = existing_by_ref(extracted["reference"])
+            if existing:
                 return Response(
-                    {
-                        "detail": "Doublon détecté: ce provider_ref existe déjà.",
-                        "provider_ref": extracted["reference"],
-                    },
+                    duplicate_response(existing),
                     status=status.HTTP_409_CONFLICT,
                 )
 
@@ -191,10 +200,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
             )
 
         with transaction.atomic():
-            if Payment.objects.filter(provider_ref=extracted["reference"]).exists():
+            existing = existing_by_ref(extracted["reference"])
+            if existing:
                 return Response(
-                    {"detail": "Doublon détecté.",
-                     "provider_ref": extracted["reference"]},
+                    duplicate_response(existing),
                     status=status.HTTP_409_CONFLICT,
                 )
 
@@ -229,15 +238,72 @@ class PaymentViewSet(viewsets.ModelViewSet):
         Body: {"decision": "RECONCILIE" | "ANOMALIE"}
         """
         payment = self.get_object()
-        decision = request.data.get("decision", "RECONCILIE").upper()
-        if decision not in ("RECONCILIE", "ANOMALIE"):
+        decision = (
+            request.data.get("decision")
+            or request.data.get("action")
+            or "RECONCILIE"
+        ).upper()
+        mapping = {
+            "RECONCILIE": "RECONCILIE",
+            "ACCEPT": "RECONCILIE",
+            "APPROVE": "RECONCILIE",
+            "ANOMALIE": "ANOMALIE",
+            "REJECT": "ANOMALIE",
+        }
+        if decision not in mapping:
             return Response(
-                {"detail": "decision doit être RECONCILIE ou ANOMALIE."},
+                {"detail": "decision doit être RECONCILIE/ACCEPT ou ANOMALIE/REJECT."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        payment.status = decision
-        payment.save(update_fields=["status", "updated_at"])
+        payment.status = mapping[decision]
+        payment.match_method = MatchMethod.MANUEL if mapping[decision] else payment.match_method
+        payment.save(update_fields=["status", "match_method", "updated_at"])
         return Response(PaymentSerializer(payment).data)
+
+    @action(detail=True, methods=["get"], url_path="explain",
+            permission_classes=[IsCaissierOrHigher])
+    def explain(self, request, pk=None):
+        """GET /api/payments/{id}/explain/ — critères réels du matcher."""
+        return Response(explain_payment(self.get_object()))
+
+    @action(detail=True, methods=["patch"], url_path="review",
+            permission_classes=[IsComptableOrHigher])
+    def review(self, request, pk=None):
+        """
+        PATCH /api/payments/{id}/review/
+        Human-in-the-loop : ACCEPT | REJECT | ATTACH | REQUEST_REVIEW
+        """
+        payment = self.get_object()
+        decision = str(request.data.get("decision") or "").upper()
+        if decision in ("ACCEPT", "APPROVE", "RECONCILIE"):
+            payment.status = PaymentStatus.RECONCILIE
+            payment.match_method = MatchMethod.MANUEL
+            payment.save(update_fields=["status", "match_method", "updated_at"])
+        elif decision in ("REJECT", "ANOMALIE"):
+            payment.status = PaymentStatus.ANOMALIE
+            payment.save(update_fields=["status", "updated_at"])
+        elif decision == "ATTACH":
+            invoice_id = request.data.get("invoice_id")
+            try:
+                invoice = Invoice.objects.get(pk=invoice_id)
+            except Invoice.DoesNotExist:
+                return Response({"detail": "Facture introuvable."}, status=status.HTTP_404_NOT_FOUND)
+            payment.invoice = invoice
+            payment.status = PaymentStatus.RECONCILIE
+            payment.match_method = MatchMethod.MANUEL
+            payment.save(update_fields=["invoice", "status", "match_method", "updated_at"])
+        elif decision == "REQUEST_REVIEW":
+            payment.status = PaymentStatus.A_VALIDER
+            payment.save(update_fields=["status", "updated_at"])
+        else:
+            return Response(
+                {"detail": "decision: ACCEPT, REJECT, ATTACH ou REQUEST_REVIEW."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({
+            "payment": PaymentSerializer(payment).data,
+            "explain": explain_payment(payment),
+        })
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
@@ -262,3 +328,133 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         if category != expense.category:
             expense.category = category
             expense.save(update_fields=["category"])
+
+
+class FinancialSourceViewSet(viewsets.ModelViewSet):
+    """
+    GET/POST /api/sources/
+    POST /api/sources/{id}/sync/
+    GET  /api/sources/{id}/health/
+    """
+    queryset = FinancialSource.objects.filter(is_active=True)
+    serializer_class = FinancialSourceSerializer
+    permission_classes = [IsComptableOrHigher]
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_permissions(self):
+        if self.action in ("create", "sync"):
+            return [IsGerant()]
+        return [IsComptableOrHigher()]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user, is_simulated=True)
+
+    @action(detail=True, methods=["post"], url_path="sync")
+    def sync(self, request, pk=None):
+        source = self.get_object()
+        log = sync_source(source, request.user)
+        return Response({
+            "source": FinancialSourceSerializer(source).data,
+            "sync": ConnectorSyncSerializer(log).data,
+            "disclaimer": "Synchronisation via connecteur simulé. Aucune API opérateur réelle.",
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="health")
+    def health(self, request, pk=None):
+        from finance.connectors.registry import get_connector
+        source = self.get_object()
+        connector = get_connector(source.connector_kind)
+        payload = connector.health_check()
+        payload["source_id"] = source.id
+        payload["last_sync_at"] = source.last_sync_at
+        payload["last_error"] = source.last_error
+        return Response(payload)
+
+
+class EvidenceView(APIView):
+    """
+    POST /api/evidence/ — point d'entrée unique (photo, SMS, CSV, saisie).
+    N'atteste pas l'authenticité de la preuve.
+    """
+    permission_classes = [IsCaissierOrHigher]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        kind = str(request.data.get("kind") or request.data.get("type") or "").lower()
+        user = request.user
+        try:
+            if kind in ("image", "photo", "capture"):
+                image_file = request.FILES.get("image") or request.FILES.get("file")
+                if not image_file:
+                    return Response({"detail": "Fichier image manquant."}, status=400)
+                extracted = extract_payment_from_image(image_file.read(), image_file.name)
+                tx = NormalizedTransaction(
+                    source=extracted["operator"],
+                    external_id=extracted["reference"],
+                    direction="IN",
+                    amount=extracted["montant"],
+                    currency="XOF",
+                    counterparty=extracted["emetteur"],
+                    reference=extracted["reference"],
+                    occurred_at=extracted["date_paiement"],
+                    phone=extracted.get("telephone_emetteur") or "",
+                    raw_payload={"raw_text": extracted.get("raw_text", "")},
+                )
+            elif kind == "sms":
+                text = (request.data.get("text") or "").strip()
+                if not text:
+                    return Response({"detail": "Champ text manquant."}, status=400)
+                tx = SMSConnector(text).normalize(text)
+            elif kind in ("csv", "excel"):
+                upload = request.FILES.get("file") or request.FILES.get("csv")
+                if not upload:
+                    return Response({"detail": "Fichier CSV manquant."}, status=400)
+                connector = CSVConnector(upload.read())
+                rows, _ = connector.fetch_transactions()
+                created, ignored = [], []
+                for row in rows:
+                    ntx = connector.normalize(row)
+                    existing = existing_by_ref(ntx.reference)
+                    if existing:
+                        ignored.append(duplicate_response(existing))
+                        continue
+                    payment, _ = ingest_normalized(ntx, user)
+                    created.append(PaymentSerializer(payment).data)
+                return Response({
+                    "kind": "csv",
+                    "created": created,
+                    "ignored": ignored,
+                    "disclaimer": "Import fichier. Pas une preuve d'authenticité.",
+                }, status=201)
+            elif kind == "manual":
+                tx = ManualConnector().normalize(request.data)
+            else:
+                return Response(
+                    {"detail": "kind doit être image, sms, csv ou manual."},
+                    status=400,
+                )
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        existing = existing_by_ref(tx.reference)
+        if existing:
+            return Response(duplicate_response(existing), status=status.HTTP_409_CONFLICT)
+
+        payment, _ = ingest_normalized(tx, user)
+        return Response({
+            "kind": kind,
+            "payment": PaymentSerializer(payment).data,
+            "explain": explain_payment(payment),
+            "extracted": {
+                "amount": str(tx.amount),
+                "reference": tx.reference,
+                "counterparty": tx.counterparty,
+                "source": tx.source,
+                "occurred_at": tx.occurred_at.isoformat(),
+            },
+            "disclaimer": (
+                "Données extraites et rapprochées des factures internes. "
+                "Ce n'est pas une preuve d'authenticité de la capture."
+            ),
+        }, status=status.HTTP_201_CREATED)
+

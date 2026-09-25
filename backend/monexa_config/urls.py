@@ -22,6 +22,8 @@ from finance.viewsets import (
     InvoiceViewSet,
     PaymentViewSet,
     ExpenseViewSet,
+    FinancialSourceViewSet,
+    EvidenceView,
 )
 from reporting.views import (
     DashboardSummaryView,
@@ -38,6 +40,7 @@ router.register(r"accounts", AccountViewSet, basename="account")
 router.register(r"invoices", InvoiceViewSet, basename="invoice")
 router.register(r"payments", PaymentViewSet, basename="payment")
 router.register(r"expenses", ExpenseViewSet, basename="expense")
+router.register(r"sources", FinancialSourceViewSet, basename="source")
 
 urlpatterns = [
     path("", include("website.urls")),
@@ -64,6 +67,7 @@ urlpatterns = [
 
     # Assistant TresorIA
     path("api/assistant/ask/", AskView.as_view(), name="assistant_ask"),
+    path("api/evidence/", EvidenceView.as_view(), name="evidence"),
 
     # Documentation API
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

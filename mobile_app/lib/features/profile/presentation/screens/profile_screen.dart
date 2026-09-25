@@ -202,6 +202,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             const SizedBox(height: 20),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Sources financières'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/sources'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Prévisions'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/forecast'),
+            ),
+            if (isGerant) ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Anomalies'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/anomalies'),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Journal d\'audit'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/audit'),
+              ),
+            ],
+
+            const SizedBox(height: 20),
 
             // Cache & Offline-first info
             const Text(

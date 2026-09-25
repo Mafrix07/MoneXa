@@ -55,7 +55,7 @@ class DashboardData {
       facturesEnRetard: json['factures_en_retard'] ?? 0,
       facturesEnAttente: json['factures_en_attente'] ?? 0,
       paiementsAValider: json['paiements_a_valider'] ?? 0,
-      anomaliesNonResolues: json['anomalies_non_resolues'] ?? 0,
+      anomaliesNonResolues: json['anomalies_non_resolues'] ?? json['nb_anomalies'] ?? 0,
       topClients: json['top_5_clients'] ?? [],
       isFromCache: isFromCache,
     );

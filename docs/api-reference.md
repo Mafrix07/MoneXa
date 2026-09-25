@@ -10,7 +10,12 @@
 | `PATCH` | `/api/auth/me/2fa/` | gérant | Toggle 2FA TOTP |
 | `GET/POST` | `/api/invoices/` | caissier+ | CRUD factures (num. auto) |
 | `GET/PATCH` | `/api/invoices/{id}/` | comptable+ | Détail / validation facture |
-| `POST` | `/api/payments/evidence/` | caissier+ | Upload image → pipeline IA → matching |
+| `POST` | `/api/evidence/` | caissier+ | Preuve unifiée (image, sms, csv, manual) |
+| `GET` | `/api/payments/{id}/explain/` | caissier+ | Critères réels du rapprochement |
+| `PATCH` | `/api/payments/{id}/review/` | comptable+ | HITL ACCEPT / REJECT / ATTACH |
+| `GET/POST` | `/api/sources/` | comptable+ / gérant | Sources financières (connecteurs **simulés**) |
+| `POST` | `/api/sources/{id}/sync/` | gérant | Sync idempotente |
+| `GET` | `/api/sources/{id}/health/` | comptable+ | Santé du connecteur |
 | `POST` | `/api/payments/manual-text/` | caissier+ | Fallback : texte SMS collé |
 | `GET` | `/api/payments/?status=A_VALIDER` | comptable+ | File de validation |
 | `PATCH` | `/api/payments/{id}/validate/` | comptable+ | Validation / rejet paiement |

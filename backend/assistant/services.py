@@ -18,7 +18,8 @@ from reporting.services import compute_kpis
 _TREASURY_HINTS = re.compile(
     r"solde|tr[eé]sor|encaiss|d[eé]caiss|facture|paiement|anomal|"
     r"tmoney|t-money|moov|flooz|pr[eé]vision|client|valider|caisse|"
-    r"fcfa|retard|kpi|dashboard|combien|bonjour|salut|hello",
+    r"fcfa|retard|kpi|dashboard|combien|bonjour|salut|hello|"
+    r"rapproch|non.?rattach|situation|flux|pourquoi|diminue|source",
     re.IGNORECASE,
 )
 
@@ -98,6 +99,45 @@ def _rule_answer(user, question: str, kpis: dict) -> str | None:
         return (
             f"{kpis['paiements_a_valider']} paiement(s) sont en attente de validation "
             f"par le comptable. Connectez-vous avec un compte Comptable ou Gérant pour les valider."
+        )
+    if re.search(r"(tr[eé]sorerie r[eé]elle|situation de tr[eé]sorerie|combien.*poss[eè]de)", q):
+        return (
+            f"Trésorerie consolidée : {_format_fcfa(kpis['solde_total'])}. "
+            f"T-Money {_format_fcfa(kpis['solde_par_canal'].get('TMONEY', 0))}, "
+            f"Moov {_format_fcfa(kpis['solde_par_canal'].get('MOOV', 0))}, "
+            f"Banque {_format_fcfa(kpis['solde_par_canal'].get('BANQUE', 0))}, "
+            f"Espèces {_format_fcfa(kpis['solde_par_canal'].get('ESPECES', 0))}."
+        )
+    if re.search(r"(non.?rapproch|non.?rattach|pas encore rapproch)", q):
+        return (
+            f"{kpis.get('paiements_non_rattaches', 0)} paiement(s) ne sont pas encore rapprochés "
+            f"d'une facture. {kpis['paiements_a_valider']} sont en file À valider."
+        )
+    if re.search(r"(principaux flux|mes flux|encaiss.*d[eé]caiss)", q):
+        return (
+            f"Sur 30 jours : encaissé {_format_fcfa(kpis['encaisse_30j'])}, "
+            f"décaissé {_format_fcfa(kpis['decaisse_30j'])}, "
+            f"flux net {_format_fcfa(kpis['flux_net_30j'])}."
+        )
+    if re.search(r"(pourquoi.*(diminue|baisse|descend)|tr[eé]sorerie diminue)", q):
+        if kpis["decaisse_30j"] > kpis["encaisse_30j"]:
+            return (
+                f"Les sorties 30 jours ({_format_fcfa(kpis['decaisse_30j'])}) "
+                f"dépassent les encaissements ({_format_fcfa(kpis['encaisse_30j'])}). "
+                f"Prévision J+30 (variation de flux projetée) : {_format_fcfa(kpis['prevision_j30'])}."
+            )
+        return (
+            f"Sur 30 jours le flux net est de {_format_fcfa(kpis['flux_net_30j'])}. "
+            f"Les décaissements s'élèvent à {_format_fcfa(kpis['decaisse_30j'])}. "
+            f"Aucune baisse n'est déduite au-delà de ces écritures."
+        )
+    if re.search(r"(situation.*anomal|quelles anomal|dois-je v[eé]rifier)", q):
+        return (
+            f"Trésorerie {_format_fcfa(kpis['solde_total'])}. "
+            f"{kpis['nb_anomalies']} anomalie(s), "
+            f"{kpis.get('paiements_non_rattaches', 0)} non rattaché(s), "
+            f"{kpis['paiements_a_valider']} à valider. "
+            f"Ce sont des alertes de cohérence, pas une qualification de fraude."
         )
     if re.search(r"^(bonjour|salut|hello|bonsoir|coucou)", q):
         name = user.display_name if user else ""

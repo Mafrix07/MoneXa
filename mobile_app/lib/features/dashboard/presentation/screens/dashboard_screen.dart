@@ -177,26 +177,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Trésorerie Totale Consolidée',
+                              'Trésorerie consolidée',
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Text(
-                                'CFO Live',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
                               ),
                             ),
                           ],
@@ -228,6 +213,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ],
                     ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ActionChip(
+                        label: const Text('À valider'),
+                        onPressed: () => context.go('/payments'),
+                      ),
+                      ActionChip(
+                        label: const Text('Anomalies'),
+                        onPressed: () => context.push('/anomalies'),
+                      ),
+                      ActionChip(
+                        label: const Text('Prévisions'),
+                        onPressed: () => context.push('/forecast'),
+                      ),
+                      ActionChip(
+                        label: const Text('Sources'),
+                        onPressed: () => context.push('/sources'),
+                      ),
+                      ActionChip(
+                        label: const Text('Audit'),
+                        onPressed: () => context.push('/audit'),
+                      ),
+                      ActionChip(
+                        label: const Text('TresorIA'),
+                        onPressed: () => context.go('/assistant'),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 18),

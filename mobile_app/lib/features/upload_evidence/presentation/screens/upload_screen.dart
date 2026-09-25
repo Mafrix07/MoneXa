@@ -83,7 +83,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Capture de Reçu'),
+        title: const Text('Ajouter une preuve'),
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
@@ -235,6 +235,12 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
           Wrap(
             spacing: 8,
             children: [
+              ActionChip(
+                label: const Text('Golden 50 000 F'),
+                onPressed: () => _fillSampleSms(
+                  "Moov Money: credit 50000 FCFA de ABC Services ID MV849321 le 25/09/2026 09:15",
+                ),
+              ),
               ActionChip(
                 label: const Text('T-Money 50 000 F'),
                 onPressed: () => _fillSampleSms(
@@ -407,7 +413,7 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 14),
                 const Text(
-                  'Paiement Enregistré & Réconcilié !',
+                  'Preuve extraite — pas une preuve d\'authenticité',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -444,6 +450,29 @@ class _UploadScreenState extends State<UploadScreen> with SingleTickerProviderSt
                   '${(confidence * 100).toInt()}%',
                   valueColor: AppColors.success,
                 ),
+                if (result['explain'] is Map) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    (result['explain'] as Map)['decision_label']?.toString() ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  ...List.from((result['explain'] as Map)['criteria'] ?? []).map((raw) {
+                    final c = Map<String, dynamic>.from(raw as Map);
+                    final ok = c['matched'] == true;
+                    return _buildResultRow(
+                      '${ok ? '✓' : '✗'} ${c['label']}',
+                      '',
+                    );
+                  }),
+                ],
+                if (result['disclaimer'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      result['disclaimer'].toString(),
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                  ),
               ],
             ),
           ),

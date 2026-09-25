@@ -178,6 +178,7 @@ cp .env.example .env
 
 python manage.py migrate
 python manage.py seed_demo
+python manage.py seed_golden_demo
 python manage.py generate_forecast
 python manage.py runserver 0.0.0.0:8000
 ```

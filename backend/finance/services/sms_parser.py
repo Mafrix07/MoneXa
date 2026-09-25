@@ -118,7 +118,7 @@ def _parse_payer(text: str) -> Optional[str]:
         if not found:
             continue
         name = re.split(
-            r"[\(\n]|tel|tél|ref|id:|000",
+            r"[\(\n]|tel|tél|ref|id:|\bid\b|000",
             found.group(1),
             maxsplit=1,
             flags=re.I,

@@ -245,6 +245,108 @@ class Expense(models.Model):
         return f"{self.supplier} — {self.amount:,.2f} FCFA ({self.get_category_display()})"
 
 
+class ConnectorKind(models.TextChoices):
+    TMONEY = "TMONEY", "T-Money"
+    MOOV = "MOOV", "Moov Money"
+    FLOOZ = "FLOOZ", "Flooz"
+    BANQUE = "BANQUE", "Banque"
+    ESPECES = "ESPECES", "Caisse"
+    CSV = "CSV", "CSV / Excel"
+    SMS = "SMS", "SMS"
+    MANUAL = "MANUAL", "Saisie manuelle"
+
+
+class IntegrationMethod(models.TextChoices):
+    SIMULATED_API = "SIMULATED_API", "Connecteur simulé (aucune API opérateur réelle)"
+    CSV = "CSV", "Import CSV / Excel"
+    SMS = "SMS", "Preuve SMS"
+    PHOTO = "PHOTO", "Photo / capture"
+    MANUAL = "MANUAL", "Saisie manuelle"
+
+
+class SourceStatus(models.TextChoices):
+    ACTIVE = "ACTIVE", "Actif"
+    IDLE = "IDLE", "En attente"
+    ERROR = "ERROR", "Erreur"
+    DISABLED = "DISABLED", "Désactivé"
+
+
+class SyncStatus(models.TextChoices):
+    RUNNING = "RUNNING", "En cours"
+    SUCCESS = "SUCCESS", "Succès"
+    PARTIAL = "PARTIAL", "Partiel"
+    ERROR = "ERROR", "Erreur"
+
+
+class FinancialSource(models.Model):
+    """
+    Source financière affichée dans « Sources ».
+
+    Les connecteurs T-Money / Moov / Flooz / banque sont SIMULÉS :
+    aucune API opérateur n'est branchée. L'architecture permet de
+    remplacer Simulated*Connector par une intégration réelle plus tard.
+    """
+    name = models.CharField(max_length=120)
+    connector_kind = models.CharField(max_length=20, choices=ConnectorKind.choices)
+    integration_method = models.CharField(
+        max_length=20,
+        choices=IntegrationMethod.choices,
+        default=IntegrationMethod.SIMULATED_API,
+    )
+    account = models.ForeignKey(
+        Account, on_delete=models.SET_NULL, null=True, blank=True, related_name="sources",
+    )
+    channel = models.CharField(max_length=20, choices=Channel.choices, db_index=True)
+    is_simulated = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20, choices=SourceStatus.choices, default=SourceStatus.IDLE,
+    )
+    merchant_mask = models.CharField(max_length=32, blank=True, default="")
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_success_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True, default="")
+    cursor = models.CharField(max_length=120, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="financial_sources",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Source financière"
+        verbose_name_plural = "Sources financières"
+        ordering = ["channel", "name"]
+
+    def __str__(self) -> str:
+        sim = "simulé" if self.is_simulated else "live"
+        return f"{self.name} ({sim})"
+
+
+class ConnectorSync(models.Model):
+    """Journal d'une synchronisation de connecteur (idempotente)."""
+    source = models.ForeignKey(
+        FinancialSource, on_delete=models.CASCADE, related_name="syncs",
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=20, choices=SyncStatus.choices, default=SyncStatus.RUNNING,
+    )
+    created_count = models.PositiveIntegerField(default=0)
+    ignored_count = models.PositiveIntegerField(default=0)
+    error_message = models.TextField(blank=True, default="")
+    cursor_before = models.CharField(max_length=120, blank=True, default="")
+    cursor_after = models.CharField(max_length=120, blank=True, default="")
+
+    class Meta:
+        verbose_name = "Synchronisation connecteur"
+        verbose_name_plural = "Synchronisations connecteur"
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.source_id} {self.status} +{self.created_count}/skip {self.ignored_count}"
+
+
 class ForecastCache(models.Model):
     """Cache des prévisions Holt-Winters (pré-calculées via generate_forecast)."""
     days = models.PositiveSmallIntegerField(unique=True, default=7)

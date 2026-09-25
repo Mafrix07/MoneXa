@@ -1,7 +1,7 @@
 """Finance admin customization."""
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Account, Invoice, Payment, Expense, ForecastCache, Channel
+from .models import Account, Invoice, Payment, Expense, ForecastCache, FinancialSource, ConnectorSync
 
 
 @admin.register(Account)
@@ -119,6 +119,29 @@ class ForecastCacheAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_gerant()
+
+
+@admin.register(FinancialSource)
+class FinancialSourceAdmin(admin.ModelAdmin):
+    list_display = (
+        "name", "connector_kind", "channel", "is_simulated", "status",
+        "last_sync_at", "merchant_mask",
+    )
+    list_filter = ("connector_kind", "is_simulated", "status")
+    readonly_fields = ("last_sync_at", "last_success_at", "last_error", "cursor")
+
+
+@admin.register(ConnectorSync)
+class ConnectorSyncAdmin(admin.ModelAdmin):
+    list_display = ("source", "status", "created_count", "ignored_count", "started_at")
+    readonly_fields = (
+        "source", "started_at", "finished_at", "status",
+        "created_count", "ignored_count", "error_message",
+        "cursor_before", "cursor_after",
+    )
+
+    def has_add_permission(self, request):
+        return False
 
 
 # Customise Admin site header

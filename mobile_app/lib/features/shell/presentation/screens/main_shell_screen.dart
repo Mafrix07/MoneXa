@@ -40,17 +40,17 @@ class MainShellScreen extends StatelessWidget {
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_outlined),
               activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
+              label: 'Accueil',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt_outlined),
-              activeIcon: Icon(Icons.camera_alt),
-              label: 'Scanner',
+              icon: Icon(Icons.add_a_photo_outlined),
+              activeIcon: Icon(Icons.add_a_photo),
+              label: 'Preuve',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_outlined),
               activeIcon: Icon(Icons.receipt_long),
-              label: 'Paiements',
+              label: 'Flux',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.smart_toy_outlined),

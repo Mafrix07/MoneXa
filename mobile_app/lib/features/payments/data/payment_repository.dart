@@ -184,7 +184,9 @@ class PaymentRepository {
     try {
       await _client.dio.patch(
         ApiEndpoints.validatePayment(paymentId),
-        data: {'action': action},
+        data: {
+          'decision': action == 'APPROVE' || action == 'ACCEPT' ? 'RECONCILIE' : 'ANOMALIE',
+        },
       );
     } catch (_) {
       // Fallback offline : on met à jour localement dans Hive
