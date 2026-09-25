@@ -69,7 +69,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         reset = options.get("reset", False)
         if reset:
-            self.stdout.write(self.style.WARNING("⚠ Reset des données existantes..."))
+            self.stdout.write(self.style.WARNING("[reset] donnees existantes..."))
             Payment.objects.all().delete()
             Invoice.objects.all().delete()
             Expense.objects.all().delete()
@@ -114,7 +114,7 @@ class Command(BaseCommand):
         caissier.set_password("Monexa2026!")
         caissier.save()
 
-        self.stdout.write(f"  ✓ 3 utilisateurs créés (gerant / comptable / caissier)")
+        self.stdout.write(f"  [ok] 3 utilisateurs créés (gerant / comptable / caissier)")
 
         # ── Comptes de trésorerie ──────────────────────────────────
         accounts = {}
@@ -124,7 +124,7 @@ class Command(BaseCommand):
                 defaults={"owner": gerant, "is_active": True},
             )
             accounts[channel_code] = acc
-        self.stdout.write(f"  ✓ {len(accounts)} comptes de trésorerie")
+        self.stdout.write(f"  [ok] {len(accounts)} comptes de trésorerie")
 
         # ── Factures ────────────────────────────────────────────────
         now = timezone.now()
@@ -143,7 +143,7 @@ class Command(BaseCommand):
                 status=InvoiceStatus.EN_ATTENTE,
                 created_by=caissier,
             )
-        self.stdout.write(f"  ✓ 50 factures créées (FACT-2026-XXXX)")
+        self.stdout.write(f"  [ok] 50 factures créées (FACT-2026-XXXX)")
 
         # ── Paiements ──────────────────────────────────────────────
         for i in range(200):
@@ -181,7 +181,7 @@ class Command(BaseCommand):
                 anomaly_score=rng.uniform(0, 0.3),
                 created_by=caissier,
             )
-        self.stdout.write(f"  ✓ 200 paiements créés (3 anomalies typées incluses)")
+        self.stdout.write(f"  [ok] 200 paiements créés (3 anomalies typées incluses)")
 
         # ── Dépenses ────────────────────────────────────────────────
         for i in range(30):
@@ -193,7 +193,7 @@ class Command(BaseCommand):
                 paid_at=paid_at,
                 created_by=comptable,
             )
-        self.stdout.write(f"  ✓ 30 dépenses créées")
+        self.stdout.write(f"  [ok] 30 dépenses créées")
 
         # ── Cache prévisions ────────────────────────────────────────
         try:
@@ -215,11 +215,11 @@ class Command(BaseCommand):
                     "confidence_high": f30.get("confidence_high", []),
                 },
             )
-            self.stdout.write(f"  ✓ Cache prévisions Holt-Winters (J+7 et J+30)")
+            self.stdout.write(f"  [ok] Cache prévisions Holt-Winters (J+7 et J+30)")
         except Exception as e:
-            self.stdout.write(self.style.WARNING(f"  ⚠ Prévisions non générées: {e}"))
+            self.stdout.write(self.style.WARNING(f"  [warn] Previsions non generees: {e}"))
 
-        self.stdout.write(self.style.SUCCESS("\n✅ Seed démo terminé."))
+        self.stdout.write(self.style.SUCCESS("\nSeed demo termine."))
         self.stdout.write("\nComptes de test :")
         self.stdout.write("  Gérant     : gerant@monexa.tg / Monexa2026!")
         self.stdout.write("  Comptable  : comptable@monexa.tg / Monexa2026!")

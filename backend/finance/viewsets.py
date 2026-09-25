@@ -21,6 +21,7 @@ from .serializers import (
 from .services.ai_pipeline import extract_payment_from_image, extract_payment_from_text
 from .services.matcher import match_payment
 from .services.anomalies import detect_anomalies
+from .services.categorize import categorize_expense
 
 
 class AccountViewSet(viewsets.ReadOnlyModelViewSet):
@@ -254,4 +255,10 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         return qs.filter(created_by=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        expense = serializer.save(created_by=self.request.user)
+        category = categorize_expense(
+            expense.supplier, expense.note, expense.category
+        )
+        if category != expense.category:
+            expense.category = category
+            expense.save(update_fields=["category"])

@@ -7,27 +7,57 @@ Pipeline (cahier des charges §11.1):
 3. JSON response validated by Pydantic PaymentExtraction
 4. Returns dict with montant, reference, operator, emetteur, date, ai_confidence
 
-DEMO MODE (no OPENAI_API_KEY):
-    Returns a deterministic mock based on image content hash.
-    This ensures tests pass without external API dependencies.
-
-PRODUCTION MODE (OPENAI_API_KEY set):
-    Calls OpenAI Vision API. Falls back to mock on error.
+Sans clé API : le collage SMS est parsé réellement (regex).
+Les images exigent OPENAI_API_KEY ou GEMINI_API_KEY.
+MONEXA_AI_FALLBACK_MOCK=1 est réservé à pytest.
 """
 from __future__ import annotations
+
 import hashlib
-import io
-import os
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from finance.services.llm import chat_json, llm_configured, mock_fallback_enabled
+from finance.services.sms_parser import parse_sms_text
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# Pydantic schema — strict validation of LLM output
-# ──────────────────────────────────────────────────────────────────────────
+VISION_SYSTEM = (
+    "Tu es un assistant d'extraction de données de reçus mobile money ouest-africains "
+    "(T-Money, Moov Money, Flooz). "
+    "N'invente jamais. Si une information n'est pas visible, retourne null pour ce champ. "
+    "Réponds uniquement en JSON avec les clés: montant, reference, operator, "
+    "type_operation, emetteur, telephone_emetteur, date_paiement."
+)
+
+VISION_USER = """Analyse cette image de SMS ou reçu Mobile Money.
+
+Schéma JSON:
+{
+  "montant": number (FCFA, > 0) | null,
+  "reference": string (référence opérateur) | null,
+  "operator": "TMONEY" | "MOOV" | "FLOOZ" | null,
+  "type_operation": "PAIEMENT",
+  "emetteur": string (nom du payeur) | null,
+  "telephone_emetteur": string | null,
+  "date_paiement": ISO-8601 | null
+}
+
+Few-shots de formats:
+- T-Money: "Vous avez recu 50 000 FCFA de KOSSI MENSAH. Ref: TMX8847291023"
+- Moov: "Moov Money: credit 25000F de AFI ADJOVI ID MV19283746"
+- Flooz: "Flooz paiement 10000 FCFA recu. Ref FL5544332211"
+
+N'invente aucune référence ni aucun montant."""
+
+TEXT_SYSTEM = (
+    "Tu extraits des champs d'un SMS Mobile Money togolais. "
+    "N'invente jamais. JSON uniquement, mêmes clés que pour une image."
+)
+
+
 class PaymentExtraction(BaseModel):
     """Strict schema for AI-extracted payment data. Any malformed field → reject."""
 
@@ -46,7 +76,6 @@ class PaymentExtraction(BaseModel):
     @classmethod
     def validate_operator(cls, v: str) -> str:
         v_up = v.upper().strip()
-        # Mapping tolérant
         mapping = {
             "T-MONEY": "TMONEY", "TMONEY": "TMONEY", "T MONEY": "TMONEY",
             "MOOV": "MOOV", "MOOV MONEY": "MOOV", "MOOV-MONEY": "MOOV",
@@ -59,6 +88,8 @@ class PaymentExtraction(BaseModel):
     @field_validator("date_paiement")
     @classmethod
     def validate_date(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            v = v.replace(tzinfo=timezone.utc)
         if v > datetime.now(timezone.utc) + timedelta(days=1):
             raise ValueError("Date de paiement dans le futur.")
         if v.year < 2020:
@@ -66,112 +97,7 @@ class PaymentExtraction(BaseModel):
         return v
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# Mock data generator (deterministic, based on image content hash)
-# ──────────────────────────────────────────────────────────────────────────
-_PAYER_NAMES = [
-    "Kossi Mensah", "Afi Adjovi", "Koffi Agbessi", "Mensah Kossi",
-    "Adzo Komla", "Komi Agbélo", "Awa Tchalla", "Yaovi Dotse",
-    "Afia Mawusi", "Kossi Tsolenyanu",
-]
-_PHONE_PREFIXES = ["90", "91", "92", "93", "70", "79"]
-
-
-def _hash_image(image_bytes: bytes) -> str:
-    """Return a hex digest of the image content."""
-    return hashlib.sha256(image_bytes).hexdigest()
-
-
-def _deterministic_mock(image_bytes: bytes) -> PaymentExtraction:
-    """
-    Generate a deterministic PaymentExtraction from the image hash.
-    Same image → same extraction. Different image → different extraction.
-    """
-    digest = _hash_image(image_bytes)
-    # Use parts of the hash to derive each field deterministically
-    seed = int(digest[:8], 16)
-    amount = (seed % 980_000) + 5_000  # 5_000 .. 985_000 FCFA
-
-    operator_idx = (int(digest[8:10], 16) % 3)
-    operators = ["TMONEY", "MOOV", "FLOOZ"]
-    operator = operators[operator_idx]
-
-    # Provider ref prefix by operator
-    prefix_map = {"TMONEY": "TMX", "MOOV": "MV", "FLOOZ": "FL"}
-    ref = f"{prefix_map[operator]}{digest[10:20].upper()}"
-
-    payer_idx = (int(digest[20:22], 16) % len(_PAYER_NAMES))
-    payer_name = _PAYER_NAMES[payer_idx]
-
-    phone_idx = (int(digest[22:24], 16) % len(_PHONE_PREFIXES))
-    phone_prefix = _PHONE_PREFIXES[phone_idx]
-    phone_rest = f"{int(digest[24:30], 16) % 100:02d} {int(digest[30:36], 16) % 100:02d} {int(digest[36:42], 16) % 100:02d}"
-    phone = f"+228 {phone_prefix} {phone_rest}"
-
-    # Date — within last 30 days
-    days_ago = int(digest[42:44], 16) % 30
-    paid_at = datetime.now(timezone.utc) - timedelta(days=days_ago,
-                                                       hours=int(digest[44:46], 16) % 24)
-
-    return PaymentExtraction(
-        montant=Decimal(amount),
-        reference=ref,
-        operator=operator,
-        type_operation="PAIEMENT",
-        emetteur=payer_name,
-        telephone_emetteur=phone,
-        date_paiement=paid_at,
-    )
-
-
-# ──────────────────────────────────────────────────────────────────────────
-# Public API
-# ──────────────────────────────────────────────────────────────────────────
-def extract_payment_from_image(image_bytes: bytes, filename: str = "") -> dict:
-    """
-    Extract payment data from an image of a Mobile Money SMS / receipt.
-
-    Args:
-        image_bytes: raw bytes of the uploaded image
-        filename: original filename (for logging)
-
-    Returns:
-        dict with keys:
-            - montant: Decimal
-            - reference: str
-            - operator: str
-            - emetteur: str
-            - telephone_emetteur: str | None
-            - date_paiement: datetime
-            - ai_confidence: float (0..1)
-            - raw_text: str (extracted text for audit)
-            - extraction: PaymentExtraction (the validated Pydantic instance)
-    """
-    # Always start from the deterministic mock (so we have a baseline)
-    extraction = _deterministic_mock(image_bytes)
-
-    # If an OpenAI/Gemini API key is set, try the real call (best-effort)
-    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")
-    confidence = 0.85  # default mock confidence
-    raw_text = (
-        f"[DEMO] Paiement reçu de {extraction.emetteur} "
-        f"({extraction.telephone_emetteur or 'n/a'}), "
-        f"montant {extraction.montant} FCFA via {extraction.operator}. "
-        f"Réf: {extraction.reference}. Date: {extraction.date_paiement:%Y-%m-%d %H:%M}."
-    )
-
-    if api_key:
-        # Production path would call openai.ChatCompletion.create with vision.
-        # We don't actually call it here — the mock is the demo fallback.
-        # In real use, replace this block with a real API call and fall back on error.
-        confidence = 0.97
-        raw_text = (
-            f"[LLM VISION] Paiement reçu de {extraction.emetteur} "
-            f"({extraction.telephone_emetteur or 'n/a'}), "
-            f"montant {extraction.montant} FCFA via {extraction.operator}. "
-            f"Réf: {extraction.reference}. Date: {extraction.date_paiement:%Y-%m-%d %H:%M}."
-        )
-
+def _to_result(extraction: PaymentExtraction, *, ai_confidence: float, raw_text: str) -> dict:
     return {
         "montant": extraction.montant,
         "reference": extraction.reference,
@@ -179,28 +105,138 @@ def extract_payment_from_image(image_bytes: bytes, filename: str = "") -> dict:
         "emetteur": extraction.emetteur,
         "telephone_emetteur": extraction.telephone_emetteur,
         "date_paiement": extraction.date_paiement,
-        "ai_confidence": confidence,
+        "ai_confidence": ai_confidence,
         "raw_text": raw_text,
         "extraction": extraction,
     }
 
 
+def _merge_partial(base: dict, extra: dict) -> dict:
+    merged = dict(base)
+    for key, value in extra.items():
+        if merged.get(key) in (None, "") and value not in (None, ""):
+            merged[key] = value
+    return merged
+
+
+def _extraction_from_partial(partial: dict) -> PaymentExtraction:
+    data = dict(partial)
+    if not data.get("emetteur"):
+        data["emetteur"] = "Payeur inconnu"
+    if not data.get("date_paiement"):
+        data["date_paiement"] = datetime.now(timezone.utc)
+    if not data.get("type_operation"):
+        data["type_operation"] = "PAIEMENT"
+    if not data.get("montant") or not data.get("reference") or not data.get("operator"):
+        missing = [k for k in ("montant", "reference", "operator") if not data.get(k)]
+        raise ValueError(
+            "Extraction incomplète (champs manquants: "
+            + ", ".join(missing)
+            + "). Saisissez le SMS complet ou photographiez un reçu lisible."
+        )
+    return PaymentExtraction.model_validate(data)
+
+
+def _llm_extract(*, user: str, image_bytes: Optional[bytes] = None) -> dict:
+    payload = chat_json(
+        system=VISION_SYSTEM if image_bytes else TEXT_SYSTEM,
+        user=user,
+        image_bytes=image_bytes,
+        timeout=20,
+    )
+    # Normalise nulls
+    cleaned = {k: (None if v in ("", "null", "None") else v) for k, v in payload.items()}
+    if "montant" in cleaned and cleaned["montant"] is not None:
+        cleaned["montant"] = Decimal(str(cleaned["montant"]).replace(" ", "").replace(",", "."))
+    return cleaned
+
+
+def _deterministic_mock(image_bytes: bytes) -> PaymentExtraction:
+    """Réservé à pytest (MONEXA_AI_FALLBACK_MOCK=1)."""
+    digest = hashlib.sha256(image_bytes).hexdigest()
+    seed = int(digest[:8], 16)
+    amount = (seed % 980_000) + 5_000
+    operators = ["TMONEY", "MOOV", "FLOOZ"]
+    operator = operators[int(digest[8:10], 16) % 3]
+    prefix_map = {"TMONEY": "TMX", "MOOV": "MV", "FLOOZ": "FL"}
+    names = [
+        "Kossi Mensah", "Afi Adjovi", "Koffi Agbessi", "Mensah Kossi",
+        "Adzo Komla", "Komi Agbélo", "Awa Tchalla", "Yaovi Dotse",
+    ]
+    payer = names[int(digest[20:22], 16) % len(names)]
+    days_ago = int(digest[42:44], 16) % 30
+    paid_at = datetime.now(timezone.utc) - timedelta(days=days_ago)
+    return PaymentExtraction(
+        montant=Decimal(amount),
+        reference=f"{prefix_map[operator]}{digest[10:20].upper()}",
+        operator=operator,
+        type_operation="PAIEMENT",
+        emetteur=payer,
+        telephone_emetteur="+228 90 12 34 56",
+        date_paiement=paid_at,
+    )
+
+
+def extract_payment_from_image(image_bytes: bytes, filename: str = "") -> dict:
+    if not image_bytes:
+        raise ValueError("Image vide.")
+
+    if llm_configured():
+        try:
+            partial = _llm_extract(user=VISION_USER, image_bytes=image_bytes)
+        except Exception as exc:
+            raise ValueError(
+                f"Échec de l'extraction Vision: {exc}. "
+                "Vérifiez la clé API ou collez le texte du SMS (fallback)."
+            ) from exc
+        extraction = _extraction_from_partial(partial)
+        raw = (
+            f"[LLM VISION] {extraction.emetteur} {extraction.montant} FCFA "
+            f"{extraction.operator} réf {extraction.reference} fichier={filename}"
+        )
+        return _to_result(extraction, ai_confidence=0.92, raw_text=raw)
+
+    if mock_fallback_enabled():
+        extraction = _deterministic_mock(image_bytes)
+        raw = (
+            f"[TEST MOCK] Paiement reçu de {extraction.emetteur}, "
+            f"montant {extraction.montant} FCFA via {extraction.operator}. "
+            f"Réf: {extraction.reference}."
+        )
+        return _to_result(extraction, ai_confidence=0.85, raw_text=raw)
+
+    raise ValueError(
+        "Extraction d'image impossible sans LLM. "
+        "Ajoutez OPENAI_API_KEY ou GEMINI_API_KEY dans backend/.env, "
+        "ou utilisez POST /api/payments/manual-text/ avec le SMS."
+    )
+
+
 def extract_payment_from_text(text: str) -> dict:
-    """
-    Fallback : parse raw SMS text directly (Plan B).
-    Used by /api/payments/manual-text/ endpoint.
-    """
-    text_bytes = text.encode("utf-8")
-    # Same hash-based mock so behavior is deterministic in tests
-    extraction = _deterministic_mock(text_bytes)
-    return {
-        "montant": extraction.montant,
-        "reference": extraction.reference,
-        "operator": extraction.operator,
-        "emetteur": extraction.emetteur,
-        "telephone_emetteur": extraction.telephone_emetteur,
-        "date_paiement": extraction.date_paiement,
-        "ai_confidence": 0.80,  # slightly lower for text fallback
-        "raw_text": f"[TEXT] {text}",
-        "extraction": extraction,
-    }
+    text = (text or "").strip()
+    if len(text) < 8:
+        raise ValueError("Texte SMS trop court.")
+
+    parsed = parse_sms_text(text)
+    if llm_configured() and (
+        not parsed.get("montant") or not parsed.get("reference") or not parsed.get("operator")
+    ):
+        try:
+            llm_part = _llm_extract(user=f"SMS:\n{text}\n\n{VISION_USER}")
+            parsed = _merge_partial(parsed, llm_part)
+        except Exception:
+            pass
+
+    extraction = _extraction_from_partial(parsed)
+    return _to_result(
+        extraction,
+        ai_confidence=0.88 if parsed.get("montant") and parsed.get("reference") else 0.7,
+        raw_text=f"[SMS] {text}",
+    )
+
+
+__all__ = [
+    "PaymentExtraction",
+    "extract_payment_from_image",
+    "extract_payment_from_text",
+]

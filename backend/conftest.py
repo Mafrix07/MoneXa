@@ -1,4 +1,11 @@
 """Pytest fixtures shared across apps."""
+import os
+
+# Mock Vision uniquement en tests — jamais le chemin par défaut de l'app.
+os.environ.setdefault("MONEXA_AI_FALLBACK_MOCK", "1")
+os.environ.pop("OPENAI_API_KEY", None)
+os.environ.pop("GEMINI_API_KEY", None)
+
 import pytest
 from accounts.models import User, Role
 

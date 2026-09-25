@@ -1,6 +1,8 @@
 """
-Tests du pipeline IA (extraction LLM multimodale — mock).
+Tests du pipeline IA (Vision réelle si clé, mock pytest, parseur SMS).
 """
+from decimal import Decimal
+
 import pytest
 from finance.services.ai_pipeline import (
     extract_payment_from_image, extract_payment_from_text,
@@ -38,11 +40,15 @@ def test_extraction_different_images_give_different_results():
 
 
 def test_text_fallback_works():
-    """Le fallback texte (Plan B) fonctionne."""
-    result = extract_payment_from_text("Paiement recu: 50000 FCFA de Kossi. Ref: TMX1234567890.")
-    assert "montant" in result
-    assert "raw_text" in result
-    assert "TMX" in result["raw_text"] or "Paiement" in result["raw_text"]
+    """Le collage SMS extrait les champs réels (pas un hash)."""
+    result = extract_payment_from_text(
+        "T-Money: Vous avez recu 50000 FCFA de Kossi. Ref: TMX1234567890."
+    )
+    assert result["montant"] == Decimal("50000")
+    assert result["reference"] == "TMX1234567890"
+    assert result["operator"] == "TMONEY"
+    assert "kossi" in result["emetteur"].lower()
+    assert result["raw_text"].startswith("[SMS]")
 
 
 def test_payment_extraction_schema_rejects_negative_amount():

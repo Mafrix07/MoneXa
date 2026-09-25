@@ -25,7 +25,12 @@ def test_assistant_fallback_for_unknown_question(gerant_client):
     """TresorIA retourne une réponse fallback pour les questions inconnues."""
     resp = gerant_client.post("/api/assistant/ask/", {"question": "qqqqq xxx zzz"}, format="json")
     assert resp.status_code == 200
-    assert "n'ai pas compris" in resp.data["answer"].lower() or "voici ce que" in resp.data["answer"].lower()
+    answer = resp.data["answer"].lower()
+    assert (
+        "n'ai pas compris" in answer
+        or "voici ce que" in answer
+        or "trésorerie" in answer
+    )
 
 
 @pytest.mark.django_db

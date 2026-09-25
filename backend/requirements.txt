@@ -17,3 +17,6 @@ pytest>=8.0
 pytest-django>=4.8
 dj-database-url>=2.1
 psycopg2-binary>=2.9
+django-filter>=23.0
+gunicorn>=22.0
+openpyxl>=3.1

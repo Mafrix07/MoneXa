@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
     "corsheaders",
+    "django_filters",
     "django_otp",
     "django_otp.plugins.otp_totp",
 
@@ -203,6 +204,11 @@ CORS_ALLOWED_ORIGINS = config(
     default="http://localhost:8080,http://127.0.0.1:8080",
     cast=Csv(),
 )
+
+# IA — GPT-4o-mini Vision / Gemini Flash (requis pour photos de reçus)
+OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
+MONEXA_AI_FALLBACK_MOCK = config("MONEXA_AI_FALLBACK_MOCK", default=False, cast=bool)
 
 # ──────────────────────────────────────────────────────────────────────────
 # Logging
