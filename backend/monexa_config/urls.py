@@ -16,7 +16,7 @@ from drf_spectacular.views import (
 )
 
 from accounts.viewsets import MeViewSet, UserViewSet
-from accounts.views import Toggle2FAView
+from accounts.views import OrganizationMeView, RegisterView, Toggle2FAView
 from finance.viewsets import (
     AccountViewSet,
     InvoiceViewSet,
@@ -33,6 +33,7 @@ from reporting.views import (
     ExportView,
 )
 from assistant.views import AskView
+from monexa_config.health import health, ready
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="user")
@@ -44,16 +45,20 @@ router.register(r"sources", FinancialSourceViewSet, basename="source")
 
 urlpatterns = [
     path("", include("website.urls")),
+    path("health/", health, name="health"),
+    path("ready/", ready, name="ready"),
 
     # Admin
     path("admin/", admin.site.urls),
 
     # Auth
+    path("api/auth/register/", RegisterView.as_view(), name="auth_register"),
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("api/auth/me/", MeViewSet.as_view({"get": "retrieve"}), name="auth_me"),
     path("api/auth/me/2fa/", Toggle2FAView.as_view(), name="auth_me_2fa"),
+    path("api/organizations/me/", OrganizationMeView.as_view(), name="organization_me"),
 
     # API REST
     path("api/", include(router.urls)),

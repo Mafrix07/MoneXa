@@ -59,6 +59,13 @@ class ExpenseCategory(models.TextChoices):
 # ──────────────────────────────────────────────────────────────────────────
 class Account(models.Model):
     """Treasury account per channel (T-Money, Moov, Flooz, Banque, Espèces)."""
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="treasury_accounts",
+        null=True,
+        blank=True,
+    )
     name = models.CharField(max_length=100, verbose_name="Nom")
     channel = models.CharField(
         max_length=20, choices=Channel.choices, db_index=True, verbose_name="Canal"
@@ -75,7 +82,7 @@ class Account(models.Model):
     class Meta:
         verbose_name = "Compte de trésorerie"
         verbose_name_plural = "Comptes de trésorerie"
-        unique_together = [("name", "channel")]
+        unique_together = [("organization", "name", "channel")]
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_channel_display()})"
@@ -85,7 +92,14 @@ class Invoice(models.Model):
     """
     Invoice émise par la PME — référence auto-générée FACT-YYYY-XXXX.
     """
-    reference = models.CharField(max_length=20, unique=True, db_index=True)
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="invoices",
+        null=True,
+        blank=True,
+    )
+    reference = models.CharField(max_length=20, db_index=True)
     client_name = models.CharField(max_length=200, verbose_name="Client")
     client_phone = models.CharField(max_length=20, blank=True, default="")
     amount = models.DecimalField(
@@ -111,6 +125,12 @@ class Invoice(models.Model):
         verbose_name = "Facture"
         verbose_name_plural = "Factures"
         ordering = ["-issue_date"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "reference"],
+                name="uniq_invoice_ref_per_org",
+            ),
+        ]
         indexes = [
             models.Index(fields=["status", "issue_date"]),
             models.Index(fields=["client_phone"]),
@@ -120,12 +140,15 @@ class Invoice(models.Model):
         return f"{self.reference} — {self.client_name} ({self.amount:,.2f} FCFA)"
 
     @classmethod
-    def generate_reference(cls) -> str:
-        """Generate next invoice reference: FACT-YYYY-XXXX."""
+    def generate_reference(cls, organization=None) -> str:
+        """Generate next invoice reference: FACT-YYYY-XXXX (scoped to org)."""
         from datetime import date
         year = date.today().year
         prefix = f"FACT-{year}-"
-        last = cls.objects.filter(reference__startswith=prefix).order_by("-reference").first()
+        qs = cls.objects.filter(reference__startswith=prefix)
+        if organization is not None:
+            qs = qs.filter(organization=organization)
+        last = qs.order_by("-reference").first()
         if last:
             try:
                 seq = int(last.reference.split("-")[-1]) + 1
@@ -145,12 +168,18 @@ class Payment(models.Model):
     - amount DecimalField(14, 2) — jamais de FloatField
     - paid_at indexé pour optimiser les requêtes dashboard
     """
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="payments",
+        null=True,
+        blank=True,
+    )
     provider_ref = models.CharField(
         max_length=50,
-        unique=True,
         db_index=True,
         verbose_name="Référence opérateur",
-        help_text="Référence unique de la transaction Mobile Money.",
+        help_text="Référence unique de la transaction Mobile Money (par organisation).",
     )
     amount = models.DecimalField(
         max_digits=14, decimal_places=2, verbose_name="Montant (FCFA)"
@@ -199,6 +228,12 @@ class Payment(models.Model):
         verbose_name = "Paiement"
         verbose_name_plural = "Paiements"
         ordering = ["-paid_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "provider_ref"],
+                name="uniq_payment_ref_per_org",
+            ),
+        ]
         indexes = [
             models.Index(fields=["status", "paid_at"]),
             models.Index(fields=["channel", "paid_at"]),
@@ -217,6 +252,13 @@ class Payment(models.Model):
 
 class Expense(models.Model):
     """Flux sortants — fournisseurs, salaires, loyer."""
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="expenses",
+        null=True,
+        blank=True,
+    )
     supplier = models.CharField(max_length=200, verbose_name="Fournisseur / Bénéficiaire")
     category = models.CharField(
         max_length=20, choices=ExpenseCategory.choices,
@@ -286,6 +328,13 @@ class FinancialSource(models.Model):
     aucune API opérateur n'est branchée. L'architecture permet de
     remplacer Simulated*Connector par une intégration réelle plus tard.
     """
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="financial_sources",
+        null=True,
+        blank=True,
+    )
     name = models.CharField(max_length=120)
     connector_kind = models.CharField(max_length=20, choices=ConnectorKind.choices)
     integration_method = models.CharField(
@@ -349,7 +398,14 @@ class ConnectorSync(models.Model):
 
 class ForecastCache(models.Model):
     """Cache des prévisions Holt-Winters (pré-calculées via generate_forecast)."""
-    days = models.PositiveSmallIntegerField(unique=True, default=7)
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.CASCADE,
+        related_name="forecast_caches",
+        null=True,
+        blank=True,
+    )
+    days = models.PositiveSmallIntegerField(default=7)
     forecast_data = models.JSONField(default=list)
     confidence_low = models.JSONField(default=list)
     confidence_high = models.JSONField(default=list)
@@ -358,6 +414,12 @@ class ForecastCache(models.Model):
     class Meta:
         verbose_name = "Cache prévision"
         verbose_name_plural = "Caches prévisions"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "days"],
+                name="uniq_forecast_days_per_org",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"Forecast J+{self.days} (généré {self.generated_at:%Y-%m-%d %H:%M})"

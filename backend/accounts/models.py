@@ -17,6 +17,27 @@ class Role(models.TextChoices):
     CAISSIER = "CAISSIER", "Caissier"
 
 
+class Organization(models.Model):
+    """Tenant SaaS — une entreprise, un espace de données isolé."""
+
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, max_length=80)
+    sector = models.CharField(max_length=120, blank=True, default="")
+    country = models.CharField(max_length=2, default="TG")
+    currency = models.CharField(max_length=3, default="XOF")
+    legal_id = models.CharField(max_length=80, blank=True, default="")
+    onboarded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "organisation"
+        verbose_name_plural = "organisations"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class User(AbstractUser):
     # USERNAME_FIELD = email (username kept for Django Admin compatibility but
     # email is the real login identifier)
@@ -36,6 +57,14 @@ class User(AbstractUser):
 
     # 2FA TOTP — optionnel pour le Gérant
     is_2fa_enabled = models.BooleanField(default=False)
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="members",
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["role"]

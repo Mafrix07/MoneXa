@@ -2,6 +2,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from accounts.tenancy import filter_queryset_by_org
 from .models import User
 from .permissions import IsGerant
 from .serializers import UserSerializer
@@ -25,3 +26,9 @@ class UserViewSet(viewsets.ModelViewSet):
     filterset_fields = ["role", "is_active"]
     search_fields = ["email", "phone"]
     ordering_fields = ["date_joined", "email"]
+
+    def get_queryset(self):
+        return filter_queryset_by_org(super().get_queryset(), self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(organization=self.request.user.organization)

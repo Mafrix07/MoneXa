@@ -29,7 +29,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "reference", "created_by", "created_at", "updated_at"]
 
     def create(self, validated_data):
-        validated_data["reference"] = Invoice.generate_reference()
+        org = validated_data.get("organization")
+        validated_data["reference"] = Invoice.generate_reference(organization=org)
         return super().create(validated_data)
 
 

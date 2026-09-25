@@ -1,5 +1,8 @@
 version: "3.9"
 
+# Développement / staging local. PostgreSQL n'écoute que sur localhost.
+# Production : secrets via fichier d'environnement, DEBUG=False, pas de seed.
+
 services:
   db:
     image: postgres:16-alpine
@@ -8,15 +11,27 @@ services:
     environment:
       POSTGRES_DB: monexa
       POSTGRES_USER: monexa
-      POSTGRES_PASSWORD: monexa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-monexa}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U monexa"]
       interval: 10s
       timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: monexa_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
       retries: 5
 
   backend:
@@ -26,14 +41,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      SECRET_KEY: change-me-in-production-please-use-a-long-random-string
-      DEBUG: "False"
-      ALLOWED_HOSTS: "*"
-      DATABASE_URL: postgres://monexa:monexa@db:5432/monexa
-      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      SECRET_KEY: ${SECRET_KEY:-local-compose-only-not-for-production-use-32chars-min}
+      DEBUG: ${DEBUG:-True}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DATABASE_URL: postgres://monexa:${POSTGRES_PASSWORD:-monexa}@db:5432/monexa
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
       LANGUAGE_CODE: fr
       TIME_ZONE: Africa/Lome
+      RUN_SEED_DEMO: ${RUN_SEED_DEMO:-0}
     ports:
       - "8000:8000"
     volumes:

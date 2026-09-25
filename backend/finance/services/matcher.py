@@ -30,9 +30,16 @@ def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a.lower().strip(), b.lower().strip()).ratio()
 
 
+def _pending_invoices(payment: Payment):
+    qs = Invoice.objects.filter(status=InvoiceStatus.EN_ATTENTE)
+    if payment.organization_id:
+        qs = qs.filter(organization_id=payment.organization_id)
+    return qs
+
+
 def _find_by_reference(payment: Payment) -> Optional[Invoice]:
-    """Level 1 — provider_ref contains an invoice reference."""
-    candidates = Invoice.objects.filter(status=InvoiceStatus.EN_ATTENTE)
+    """Level 1 — exact reference."""
+    candidates = _pending_invoices(payment)
     for invoice in candidates:
         if invoice.reference and invoice.reference in payment.provider_ref:
             return invoice
@@ -42,8 +49,7 @@ def _find_by_reference(payment: Payment) -> Optional[Invoice]:
 def _find_by_amount_and_date(payment: Payment) -> Optional[Invoice]:
     """Level 2 — exact amount match within 7 days after issue_date."""
     window_end = payment.paid_at.date() + timedelta(days=1)
-    candidates = Invoice.objects.filter(
-        status=InvoiceStatus.EN_ATTENTE,
+    candidates = _pending_invoices(payment).filter(
         amount=payment.amount,
         issue_date__lte=payment.paid_at.date(),
         issue_date__gte=payment.paid_at.date() - timedelta(days=7),
@@ -54,7 +60,7 @@ def _find_by_amount_and_date(payment: Payment) -> Optional[Invoice]:
 def _find_by_fuzzy_payer(payment: Payment) -> Optional[Invoice]:
     """Level 3 — payer name/phone similarity > 0.8 with an invoice's client."""
     threshold = 0.8
-    candidates = Invoice.objects.filter(status=InvoiceStatus.EN_ATTENTE)
+    candidates = _pending_invoices(payment)
     best_match: Optional[Invoice] = None
     best_score: float = 0.0
 

@@ -25,7 +25,7 @@
 | `GET` | `/api/anomalies/` | gérant | File d'anomalies (règles + Isolation Forest) |
 | `GET` | `/api/audit-logs/` | gérant | Journal immuable (lecture seule) |
 | `POST` | `/api/assistant/ask/` | connecté | Chatbot TresorIA (10 req/min) |
-| `GET` | `/api/reports/export/?format=csv&model=payments` | comptable+ | Export CSV / Excel / SYSCOHADA |
+| `GET` | `/api/reports/export/?export_format=csv&model=payments` | comptable+ | Export CSV (ne pas utiliser `?format=` — collision DRF) |
 | `GET` | `/api/schema/` | — | Schéma OpenAPI 3 |
 | `GET` | `/api/schema/swagger-ui/` | — | Swagger UI interactif |
 | `GET` | `/api/schema/redoc/` | — | Redoc UI |

@@ -9,14 +9,18 @@ cd monexa
 
 # Configurer les variables d'environnement
 cp backend/.env.example backend/.env
-# Éditer backend/.env avec une SECRET_KEY aléatoire et DEBUG=False pour la prod
+# Éditer backend/.env : SECRET_KEY unique, DEBUG=False en production
+# Production : base vide (ne pas activer RUN_SEED_DEMO)
 
-# Lancer les conteneurs (Backend Django + PostgreSQL)
-docker-compose up --build -d
+# Lancer (PostgreSQL uniquement sur localhost)
+docker compose up --build -d
 
-# Initialiser la base de données et les données de démo
-docker-compose exec backend python manage.py migrate
-docker-compose exec backend python manage.py seed_demo
+# Santé
+curl http://localhost:8000/health/
+curl http://localhost:8000/ready/
+
+# Démo uniquement
+docker compose exec backend python manage.py seed_demo
 ```
 
 Accès :

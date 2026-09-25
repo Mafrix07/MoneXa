@@ -22,13 +22,15 @@ FORECAST_DAYS = (7, 30)
 CONFIDENCE_LEVEL = 0.80
 
 
-def _collect_net_flux(days: int = 90) -> List[dict]:
+def _collect_net_flux(days: int = 90, organization=None) -> List[dict]:
     """
     Collect daily net flux (encaissements - décaissements) for the last N days.
-
-    Returns:
-        [{"date": "2026-09-01", "net": 125000.0}, ...]
     """
+    payments = Payment.objects.all()
+    expenses = Expense.objects.all()
+    if organization is not None:
+        payments = payments.filter(organization=organization)
+        expenses = expenses.filter(organization=organization)
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=days)
     flux = []
@@ -37,11 +39,11 @@ def _collect_net_flux(days: int = 90) -> List[dict]:
         next_day = day + timedelta(days=1)
 
         encashed = Decimal("0")
-        for p in Payment.objects.filter(paid_at__date=day):
+        for p in payments.filter(paid_at__date=day):
             encashed += p.amount
 
         spent = Decimal("0")
-        for e in Expense.objects.filter(paid_at__date__gte=day, paid_at__date__lt=next_day):
+        for e in expenses.filter(paid_at__date__gte=day, paid_at__date__lt=next_day):
             spent += e.amount
 
         flux.append({
@@ -51,7 +53,7 @@ def _collect_net_flux(days: int = 90) -> List[dict]:
     return flux
 
 
-def forecast_cashflow(days: int = 30) -> dict:
+def forecast_cashflow(days: int = 30, organization=None) -> dict:
     """
     Holt-Winters forecast for the next N days.
 
@@ -66,7 +68,7 @@ def forecast_cashflow(days: int = 30) -> dict:
             "model": "Holt-Winters (triple exponential smoothing)",
         }
     """
-    historical = _collect_net_flux(days=90)
+    historical = _collect_net_flux(days=90, organization=organization)
     series = [h["net"] for h in historical]
 
     if len(series) < 14:

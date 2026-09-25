@@ -184,7 +184,7 @@ def answer_question(user, question: str) -> str:
     if not _TREASURY_HINTS.search(question):
         return _off_topic_message()
 
-    kpis = compute_kpis()
+    kpis = compute_kpis(organization=user.organization)
 
     if llm_configured():
         try:

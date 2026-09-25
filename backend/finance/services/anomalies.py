@@ -100,7 +100,7 @@ def detect_anomalies(payment: Payment) -> List[dict]:
     return anomalies
 
 
-def score_isolation_forest() -> List[dict]:
+def score_isolation_forest(organization=None) -> List[dict]:
     """
     Batch ML scoring — Isolation Forest on 90 days of payments.
 
@@ -110,7 +110,10 @@ def score_isolation_forest() -> List[dict]:
     from sklearn.ensemble import IsolationForest
     import numpy as np
 
-    payments = list(Payment.objects.all().order_by("-paid_at")[:500])
+    qs = Payment.objects.all()
+    if organization is not None:
+        qs = qs.filter(organization=organization)
+    payments = list(qs.order_by("-paid_at")[:500])
     if len(payments) < 30:
         # Not enough data for ML
         return []

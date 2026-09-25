@@ -1,50 +1,39 @@
-"""Finance signals — auto-log Invoice/Payment creation to the audit chain."""
-from django.db.models.signals import post_save
+"""Stamp organization from the creating user when missing."""
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-from finance.models import Invoice, Payment
+from .models import Account, Expense, FinancialSource, Invoice, Payment
 
 
-@receiver(post_save, sender=Invoice)
-def _log_invoice_created(sender, instance, created, **kwargs):
-    if not created:
+def _stamp(instance, user_attr: str) -> None:
+    if instance.organization_id:
         return
-    from auditing.services import log_action
-    try:
-        log_action(
-            user=instance.created_by,
-            action="INVOICE_CREATED",
-            entity="Invoice",
-            entity_id=str(instance.pk),
-            details={
-                "reference": instance.reference,
-                "client": instance.client_name,
-                "amount": str(instance.amount),
-                "status": instance.status,
-            },
-        )
-    except Exception:
-        pass
+    user = getattr(instance, user_attr, None)
+    oid = getattr(user, "organization_id", None) if user else None
+    if oid:
+        instance.organization_id = oid
 
 
-@receiver(post_save, sender=Payment)
-def _log_payment_created(sender, instance, created, **kwargs):
-    if not created:
-        return
-    from auditing.services import log_action
-    try:
-        log_action(
-            user=instance.created_by,
-            action="PAYMENT_CREATED",
-            entity="Payment",
-            entity_id=str(instance.pk),
-            details={
-                "provider_ref": instance.provider_ref,
-                "amount": str(instance.amount),
-                "channel": instance.channel,
-                "status": instance.status,
-                "match_method": instance.match_method,
-            },
-        )
-    except Exception:
-        pass
+@receiver(pre_save, sender=Invoice)
+def stamp_invoice_org(sender, instance, **kwargs):
+    _stamp(instance, "created_by")
+
+
+@receiver(pre_save, sender=Payment)
+def stamp_payment_org(sender, instance, **kwargs):
+    _stamp(instance, "created_by")
+
+
+@receiver(pre_save, sender=Expense)
+def stamp_expense_org(sender, instance, **kwargs):
+    _stamp(instance, "created_by")
+
+
+@receiver(pre_save, sender=Account)
+def stamp_account_org(sender, instance, **kwargs):
+    _stamp(instance, "owner")
+
+
+@receiver(pre_save, sender=FinancialSource)
+def stamp_source_org(sender, instance, **kwargs):
+    _stamp(instance, "created_by")

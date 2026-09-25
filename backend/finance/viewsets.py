@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.tenancy import filter_queryset_by_org, organization_of
 from accounts.permissions import (
     IsCaissierOrHigher, IsComptableOrHigher, IsGerant, IsOwnerOrComptableOrHigher,
 )
@@ -35,7 +36,12 @@ from .connectors.manual import ManualConnector
 from .connectors.base import NormalizedTransaction
 
 
-class AccountViewSet(viewsets.ReadOnlyModelViewSet):
+class OrgMixin:
+    def get_queryset(self):
+        return filter_queryset_by_org(super().get_queryset(), self.request.user)
+
+
+class AccountViewSet(OrgMixin, viewsets.ReadOnlyModelViewSet):
     """GET /api/accounts/ — list treasury accounts (read-only)."""
     queryset = Account.objects.filter(is_active=True).order_by("channel", "name")
     serializer_class = AccountSerializer
@@ -43,7 +49,7 @@ class AccountViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ["channel"]
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
+class InvoiceViewSet(OrgMixin, viewsets.ModelViewSet):
     """
     /api/invoices/ — CRUD with role-based scoping.
 
@@ -64,7 +70,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return qs.filter(created_by=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(
+            created_by=self.request.user,
+            organization=self.request.user.organization,
+        )
 
     @action(detail=True, methods=["patch"], url_path="validate",
             permission_classes=[IsComptableOrHigher])
@@ -76,7 +85,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return Response(InvoiceSerializer(invoice).data)
 
 
-class PaymentViewSet(viewsets.ModelViewSet):
+class PaymentViewSet(OrgMixin, viewsets.ModelViewSet):
     """
     /api/payments/
 
@@ -141,7 +150,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             # Check for duplicate provider_ref
-            existing = existing_by_ref(extracted["reference"])
+            existing = existing_by_ref(extracted["reference"], request.user.organization)
             if existing:
                 return Response(
                     duplicate_response(existing),
@@ -153,6 +162,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
             image_file.seek(0)
 
             payment = Payment(
+                organization=request.user.organization,
                 provider_ref=extracted["reference"],
                 amount=extracted["montant"],
                 channel=extracted["operator"],
@@ -200,7 +210,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
             )
 
         with transaction.atomic():
-            existing = existing_by_ref(extracted["reference"])
+            existing = existing_by_ref(extracted["reference"], request.user.organization)
             if existing:
                 return Response(
                     duplicate_response(existing),
@@ -208,6 +218,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 )
 
             payment = Payment(
+                organization=request.user.organization,
                 provider_ref=extracted["reference"],
                 amount=extracted["montant"],
                 channel=extracted["operator"],
@@ -285,7 +296,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         elif decision == "ATTACH":
             invoice_id = request.data.get("invoice_id")
             try:
-                invoice = Invoice.objects.get(pk=invoice_id)
+                invoice = filter_queryset_by_org(Invoice.objects.all(), request.user).get(pk=invoice_id)
             except Invoice.DoesNotExist:
                 return Response({"detail": "Facture introuvable."}, status=status.HTTP_404_NOT_FOUND)
             payment.invoice = invoice
@@ -306,7 +317,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         })
 
 
-class ExpenseViewSet(viewsets.ModelViewSet):
+class ExpenseViewSet(OrgMixin, viewsets.ModelViewSet):
     """GET/POST /api/expenses/ — flux sortants."""
     queryset = Expense.objects.all().order_by("-paid_at")
     serializer_class = ExpenseSerializer
@@ -321,7 +332,10 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         return qs.filter(created_by=self.request.user)
 
     def perform_create(self, serializer):
-        expense = serializer.save(created_by=self.request.user)
+        expense = serializer.save(
+            created_by=self.request.user,
+            organization=self.request.user.organization,
+        )
         category = categorize_expense(
             expense.supplier, expense.note, expense.category
         )
@@ -330,7 +344,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             expense.save(update_fields=["category"])
 
 
-class FinancialSourceViewSet(viewsets.ModelViewSet):
+class FinancialSourceViewSet(OrgMixin, viewsets.ModelViewSet):
     """
     GET/POST /api/sources/
     POST /api/sources/{id}/sync/
@@ -347,7 +361,11 @@ class FinancialSourceViewSet(viewsets.ModelViewSet):
         return [IsComptableOrHigher()]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user, is_simulated=True)
+        serializer.save(
+            created_by=self.request.user,
+            is_simulated=True,
+            organization=self.request.user.organization,
+        )
 
     @action(detail=True, methods=["post"], url_path="sync")
     def sync(self, request, pk=None):
@@ -414,7 +432,7 @@ class EvidenceView(APIView):
                 created, ignored = [], []
                 for row in rows:
                     ntx = connector.normalize(row)
-                    existing = existing_by_ref(ntx.reference)
+                    existing = existing_by_ref(ntx.reference, request.user.organization)
                     if existing:
                         ignored.append(duplicate_response(existing))
                         continue
@@ -436,7 +454,7 @@ class EvidenceView(APIView):
         except Exception as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        existing = existing_by_ref(tx.reference)
+        existing = existing_by_ref(tx.reference, request.user.organization)
         if existing:
             return Response(duplicate_response(existing), status=status.HTTP_409_CONFLICT)
 

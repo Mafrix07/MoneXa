@@ -25,6 +25,7 @@ from django.utils import timezone
 from django.db import transaction
 
 from accounts.models import User, Role
+from accounts.bootstrap import demo_organization
 from finance.models import (
     Account, Invoice, Payment, Expense, ForecastCache,
     Channel, InvoiceStatus, PaymentStatus, MatchMethod, ExpenseCategory,
@@ -78,6 +79,7 @@ class Command(BaseCommand):
             User.objects.exclude(is_superuser=True).delete()
 
         rng = random.Random(42)  # reproductible
+        org = demo_organization()
 
         # ── Utilisateurs ────────────────────────────────────────────
         gerant, _ = User.objects.get_or_create(
@@ -88,8 +90,10 @@ class Command(BaseCommand):
                 "is_staff": True,
                 "is_superuser": False,
                 "is_2fa_enabled": True,
+                "organization": org,
             },
         )
+        gerant.organization = org
         gerant.set_password("Monexa2026!")
         gerant.save()
 
@@ -99,8 +103,10 @@ class Command(BaseCommand):
                 "role": Role.COMPTABLE,
                 "phone": "+228 91 00 00 02",
                 "is_staff": True,
+                "organization": org,
             },
         )
+        comptable.organization = org
         comptable.set_password("Monexa2026!")
         comptable.save()
 
@@ -109,8 +115,10 @@ class Command(BaseCommand):
             defaults={
                 "role": Role.CAISSIER,
                 "phone": "+228 92 00 00 03",
+                "organization": org,
             },
         )
+        caissier.organization = org
         caissier.set_password("Monexa2026!")
         caissier.save()
 
@@ -120,7 +128,7 @@ class Command(BaseCommand):
         accounts = {}
         for channel_code, label in Channel.choices:
             acc, _ = Account.objects.get_or_create(
-                name=label, channel=channel_code,
+                name=label, channel=channel_code, organization=org,
                 defaults={"owner": gerant, "is_active": True},
             )
             accounts[channel_code] = acc
@@ -134,7 +142,8 @@ class Command(BaseCommand):
             amount = Decimal(str(rng.choice([25_000, 50_000, 75_000, 100_000, 150_000, 200_000, 500_000, 750_000])))
             name = rng.choice(NAMES)
             Invoice.objects.create(
-                reference=Invoice.generate_reference(),
+                organization=org,
+                reference=Invoice.generate_reference(organization=org),
                 client_name=name,
                 client_phone=_random_phone(rng),
                 amount=amount,
@@ -168,6 +177,7 @@ class Command(BaseCommand):
                 paid_at = paid_at.replace(hour=3, minute=12)
 
             Payment.objects.create(
+                organization=org,
                 provider_ref=ref,
                 amount=amount,
                 channel=channel_code,
@@ -187,6 +197,7 @@ class Command(BaseCommand):
         for i in range(30):
             paid_at = now - timedelta(days=rng.randint(0, 90))
             Expense.objects.create(
+                organization=org,
                 supplier=rng.choice(SUPPLIERS),
                 category=rng.choice([c[0] for c in ExpenseCategory.choices]),
                 amount=Decimal(str(rng.choice([15_000, 50_000, 100_000, 200_000, 350_000]))),
@@ -197,18 +208,20 @@ class Command(BaseCommand):
 
         # ── Cache prévisions ────────────────────────────────────────
         try:
-            f7 = forecast_cashflow(days=7)
+            f7 = forecast_cashflow(days=7, organization=org)
             ForecastCache.objects.update_or_create(
                 days=7,
+                organization=org,
                 defaults={
                     "forecast_data": f7.get("forecast", []),
                     "confidence_low": f7.get("confidence_low", []),
                     "confidence_high": f7.get("confidence_high", []),
                 },
             )
-            f30 = forecast_cashflow(days=30)
+            f30 = forecast_cashflow(days=30, organization=org)
             ForecastCache.objects.update_or_create(
                 days=30,
+                organization=org,
                 defaults={
                     "forecast_data": f30.get("forecast", []),
                     "confidence_low": f30.get("confidence_low", []),

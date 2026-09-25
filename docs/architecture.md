@@ -66,8 +66,14 @@ MoneXa suit un monolithe Django modulaire, avec une app mobile Flutter séparée
   2. Contrainte DB `unique=True` sur `provider_ref` (anti-doublon natif)
   3. Toute écriture dans `transaction.atomic()`
 - **RBAC** : 3 rôles (Gérant > Comptable > Caissier)
-- **Audit immuable** : hash-chainage SHA-256, `save()` et `delete()` lèvent `PermissionError` (pas de trigger PostgreSQL dans ce prototype)
+- **Multi-tenant** : `Organization` isole toutes les données métier (querysets, exports, KPIs, TresorIA, audit). Unicité `provider_ref` et `invoice.reference` **par organisation**.
+- **Audit immuable** : hash-chainage SHA-256, `save()` et `delete()` lèvent `PermissionError` (chaîne Python, pas de trigger PostgreSQL)
 - **Connecteurs** : T-Money / Moov / Flooz / banque sont **simulés**. L'architecture (`finance/connectors/`) permet de les remplacer par de vraies API plus tard.
 - **2FA TOTP** optionnel pour le Gérant (`django-otp`)
 - **JWT** : access 15min, refresh 7j, rotation avec blacklist
 - **CORS** strict, **throttling** 60/min global + 10/min pour TresorIA
+- **Santé** : `GET /health/` (liveness), `GET /ready/` (base joignable)
+
+## Multi-tenant
+
+Une entreprise = une `Organization`. Les utilisateurs, comptes, factures, paiements, dépenses, sources, prévisions et journaux d'audit portent un FK `organization`. Les querysets API filtrent toujours sur l'organisation de l'utilisateur authentifié (sauf superuser sans org). `POST /api/auth/register/` crée l'organisation et le gérant fondateur. `seed_demo` reste un outil de développement, jamais le chemin de production.

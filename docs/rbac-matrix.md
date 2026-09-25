@@ -44,4 +44,4 @@
 | `GET /api/anomalies/` | gérant |
 | `GET /api/audit-logs/` | gérant |
 | `POST /api/assistant/ask/` | connecté (10 req/min) |
-| `GET /api/reports/export/?format=csv` | comptable+ |
+| `GET /api/reports/export/?export_format=csv` | comptable+ |

@@ -16,6 +16,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from accounts.models import Role, User
+from accounts.bootstrap import demo_organization
 from finance.models import Invoice, InvoiceStatus, Payment
 from finance.services.demo_sources import ensure_default_sources
 
@@ -29,30 +30,35 @@ class Command(BaseCommand):
     help = "Prépare le scénario de démo jury (facture ABC Services 50 000 FCFA)."
 
     def handle(self, *args, **options):
+        org = demo_organization()
         gerant, _ = User.objects.get_or_create(
             email="gerant@monexa.tg",
-            defaults={"role": Role.GERANT, "is_staff": True},
+            defaults={"role": Role.GERANT, "is_staff": True, "organization": org},
         )
+        gerant.organization = org
         gerant.set_password("Monexa2026!")
         gerant.save()
         caissier, _ = User.objects.get_or_create(
             email="caissier@monexa.tg",
-            defaults={"role": Role.CAISSIER},
+            defaults={"role": Role.CAISSIER, "organization": org},
         )
+        caissier.organization = org
         caissier.set_password("Monexa2026!")
         caissier.save()
         comptable, _ = User.objects.get_or_create(
             email="comptable@monexa.tg",
-            defaults={"role": Role.COMPTABLE, "is_staff": True},
+            defaults={"role": Role.COMPTABLE, "is_staff": True, "organization": org},
         )
+        comptable.organization = org
         comptable.set_password("Monexa2026!")
         comptable.save()
 
-        Payment.objects.filter(provider_ref="MV849321").delete()
+        Payment.objects.filter(provider_ref="MV849321", organization=org).delete()
 
         today = date(2026, 9, 25)
         inv, created = Invoice.objects.get_or_create(
             reference="FACT-2026-0001",
+            organization=org,
             defaults={
                 "client_name": "ABC Services",
                 "client_phone": "+228 92 00 11 22",
@@ -64,6 +70,7 @@ class Command(BaseCommand):
             },
         )
         if not created:
+            inv.organization = org
             inv.client_name = "ABC Services"
             inv.amount = Decimal("50000")
             inv.status = InvoiceStatus.EN_ATTENTE

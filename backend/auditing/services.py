@@ -39,6 +39,7 @@ def log_action(
     with transaction.atomic():
         entry = AuditLog(
             user=user,
+            organization=getattr(user, "organization", None) if user else None,
             action=action,
             entity=entity,
             entity_id=str(entity_id or ""),

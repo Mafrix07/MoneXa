@@ -15,20 +15,25 @@ DEFAULTS = (
 
 def ensure_default_sources(owner) -> list:
     created = []
+    org = getattr(owner, "organization", None)
     for name, kind, channel, method, mask in DEFAULTS:
-        acc = Account.objects.filter(channel=channel).first()
-        src, _ = FinancialSource.objects.get_or_create(
-            name=name,
-            connector_kind=kind,
-            defaults={
-                "integration_method": method,
-                "account": acc,
-                "channel": channel,
-                "is_simulated": True,
-                "status": SourceStatus.IDLE,
-                "merchant_mask": mask,
-                "created_by": owner,
-            },
-        )
+        acc_qs = Account.objects.filter(channel=channel)
+        if org is not None:
+            acc_qs = acc_qs.filter(organization=org)
+        acc = acc_qs.first()
+        lookup = {"name": name, "connector_kind": kind}
+        defaults = {
+            "integration_method": method,
+            "account": acc,
+            "channel": channel,
+            "is_simulated": True,
+            "status": SourceStatus.IDLE,
+            "merchant_mask": mask,
+            "created_by": owner,
+            "organization": org,
+        }
+        if org is not None:
+            lookup["organization"] = org
+        src, _ = FinancialSource.objects.get_or_create(**lookup, defaults=defaults)
         created.append(src)
     return created

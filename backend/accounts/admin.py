@@ -1,19 +1,25 @@
 """Django Admin customization for accounts."""
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import User, Role
+from .models import Organization, User, Role
+
+
+@admin.register(Organization)
+class OrganizationAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "country", "currency", "created_at")
+    search_fields = ("name", "slug", "legal_id")
 
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    list_display = ("email", "role", "phone", "is_2fa_enabled", "is_staff", "is_active")
+    list_display = ("email", "role", "organization", "phone", "is_2fa_enabled", "is_staff", "is_active")
     list_filter = ("role", "is_staff", "is_superuser", "is_active")
     search_fields = ("email", "phone", "username")
     ordering = ("-date_joined",)
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Informations personnelles", {"fields": ("username", "phone", "role")}),
+        ("Informations personnelles", {"fields": ("username", "phone", "role", "organization")}),
         ("Permissions", {
             "fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions"),
         }),
@@ -23,7 +29,7 @@ class UserAdmin(DjangoUserAdmin):
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("email", "role", "phone", "password1", "password2"),
+            "fields": ("email", "role", "organization", "phone", "password1", "password2"),
         }),
     )
 

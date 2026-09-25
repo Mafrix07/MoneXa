@@ -197,13 +197,15 @@ flutter run --dart-define=API_BASE_URL=http://192.168.1.10:8000
 
 ## 👥 Comptes de test
 
-Après `python manage.py seed_demo` :
+Après `python manage.py seed_demo` (**développement / démo uniquement**, jamais en production) :
 
 | Rôle | Email | Mot de passe | Accès |
 |---|---|---|---|
 | **Gérant** | `gerant@monexa.tg` | `Monexa2026!` | Full + 2FA optionnel |
 | **Comptable** | `comptable@monexa.tg` | `Monexa2026!` | Validation, reporting |
 | **Caissier** | `caissier@monexa.tg` | `Monexa2026!` | Saisie mobile terrain |
+
+En production : instance vide. Créer l'entreprise via `POST /api/auth/register/`. Santé : `/health/`, `/ready/`.
 
 Voir la matrice RBAC complète dans [`docs/rbac-matrix.md`](docs/rbac-matrix.md).
 

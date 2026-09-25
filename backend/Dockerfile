@@ -6,8 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system deps for Pillow + psycopg2
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install --no-install-recommends -y \
         build-essential libpq-dev libjpeg-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -18,5 +17,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Default command: migrate + seed + run server
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"]
+# Production : pas de seed. RUN_SEED_DEMO=1 uniquement en démo locale.
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && if [ \"$RUN_SEED_DEMO\" = \"1\" ]; then python manage.py seed_demo; fi && python manage.py runserver 0.0.0.0:8000"]

@@ -29,6 +29,13 @@ class AuditLog(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="audit_logs",
     )
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
     action = models.CharField(max_length=50, db_index=True)
     entity = models.CharField(max_length=100, db_index=True)
     entity_id = models.CharField(max_length=100, blank=True, default="")
@@ -84,7 +91,10 @@ class AuditLog(models.Model):
             self.timestamp = dj_timezone.now()
         # Get previous entry's hash
         if not self.prev_hash or self.prev_hash == "0" * 64:
-            last = AuditLog.objects.order_by("-id").first()
+            prev_qs = AuditLog.objects.all()
+            if self.organization_id:
+                prev_qs = prev_qs.filter(organization_id=self.organization_id)
+            last = prev_qs.order_by("-id").first()
             self.prev_hash = last.hash if last else "0" * 64
         # Compute own hash
         if not self.hash or self.hash == "0" * 64:

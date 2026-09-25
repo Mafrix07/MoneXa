@@ -5,6 +5,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
+from accounts.tenancy import filter_queryset_by_org
 from assistant.services import answer_question
 from finance.models import Payment
 from reporting.services import compute_kpis
@@ -56,8 +57,8 @@ class WebLogoutView(LogoutView):
 
 @login_required
 def dashboard(request):
-    kpis = compute_kpis()
-    qs = Payment.objects.all().order_by("-paid_at")
+    kpis = compute_kpis(organization=request.user.organization)
+    qs = filter_queryset_by_org(Payment.objects.all().order_by("-paid_at"), request.user)
     if not request.user.is_comptable_or_higher():
         qs = qs.filter(created_by=request.user)
     payments = qs[:12]
@@ -80,7 +81,7 @@ def dashboard(request):
 
 @login_required
 def payments(request):
-    qs = Payment.objects.all().order_by("-paid_at")
+    qs = filter_queryset_by_org(Payment.objects.all().order_by("-paid_at"), request.user)
     if not request.user.is_comptable_or_higher():
         qs = qs.filter(created_by=request.user)
     status_filter = request.GET.get("status")

@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsComptableOrHigher, IsGerant
+from accounts.tenancy import filter_queryset_by_org
 from finance.models import Payment, Expense, ForecastCache
 from finance.services.forecast import forecast_cashflow
 from finance.services.anomalies import detect_anomalies, score_isolation_forest
@@ -24,7 +25,7 @@ class DashboardSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        kpis = compute_kpis()
+        kpis = compute_kpis(organization=request.user.organization)
         return Response(kpis)
 
 
@@ -33,12 +34,15 @@ class ForecastView(APIView):
     permission_classes = [IsComptableOrHigher]
 
     def get(self, request):
+        org = request.user.organization
         days = int(request.query_params.get("days", 30))
         if days not in (7, 30):
             days = 30
-        # Try cached
-        try:
-            cached = ForecastCache.objects.get(days=days)
+        fc = ForecastCache.objects.filter(days=days)
+        if org is not None:
+            fc = fc.filter(organization=org)
+        cached = fc.first()
+        if cached:
             return Response({
                 "days": days,
                 "forecast": cached.forecast_data,
@@ -46,12 +50,11 @@ class ForecastView(APIView):
                 "confidence_high": cached.confidence_high,
                 "model": "Holt-Winters (cached)",
                 "generated_at": cached.generated_at,
-                "explanation": explain_forecast(days=days),
+                "explanation": explain_forecast(days=days, organization=org),
             })
-        except ForecastCache.DoesNotExist:
-            forecast = forecast_cashflow(days=days)
-            forecast["explanation"] = explain_forecast(days=days)
-            return Response(forecast)
+        forecast = forecast_cashflow(days=days, organization=org)
+        forecast["explanation"] = explain_forecast(days=days, organization=org)
+        return Response(forecast)
 
 
 class AnomaliesView(APIView):
@@ -67,7 +70,8 @@ class AnomaliesView(APIView):
         }
         qs = Payment.objects.filter(
             status__in=["ANOMALIE", "NON_RATTACHE"]
-        ).order_by("-paid_at")[:80]
+        ).order_by("-paid_at")
+        qs = filter_queryset_by_org(qs, request.user)[:80]
         seen = set()
         for p in qs:
             for a in detect_anomalies(p):
@@ -94,7 +98,7 @@ class AnomaliesView(APIView):
                 else:
                     grouped["anomalie_comportementale"].append(item)
 
-        iflagged = score_isolation_forest()
+        iflagged = score_isolation_forest(organization=request.user.organization)
         for row in iflagged:
             row["label"] = "Anomalie détectée"
             row["type"] = "Score comportemental (Isolation Forest)"
@@ -119,19 +123,15 @@ class AuditLogListView(generics.ListAPIView):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        # Optional filtering
-        action = self.request.query_params.get("action")
-        if action:
-            qs = qs.filter(action=action)
-        return qs
+        return filter_queryset_by_org(qs, self.request.user)
 
 
 class ExportView(APIView):
-    """GET /api/reports/export/?format=csv&model=payments — Export Excel/CSV."""
+    """GET /api/reports/export/?export_format=csv&model=payments — Export Excel/CSV."""
     permission_classes = [IsComptableOrHigher]
 
     def get(self, request):
-        fmt = request.query_params.get("format", "csv").lower()
+        fmt = request.query_params.get("export_format", "csv").lower()
         model = request.query_params.get("model", "payments").lower()
 
         if fmt != "csv":
@@ -141,10 +141,10 @@ class ExportView(APIView):
             )
 
         if model == "payments":
-            queryset = Payment.objects.all().order_by("-paid_at")
+            queryset = filter_queryset_by_org(Payment.objects.all().order_by("-paid_at"), request.user)
             rows = self._payments_to_rows(queryset)
         elif model == "expenses":
-            queryset = Expense.objects.all().order_by("-paid_at")
+            queryset = filter_queryset_by_org(Expense.objects.all().order_by("-paid_at"), request.user)
             rows = self._expenses_to_rows(queryset)
         else:
             return Response(

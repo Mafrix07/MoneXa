@@ -8,34 +8,43 @@ os.environ.pop("GEMINI_API_KEY", None)
 
 import pytest
 from accounts.models import User, Role
+from accounts.bootstrap import demo_organization
 
 
 @pytest.fixture
-def gerant(db):
+def organization(db):
+    return demo_organization()
+
+
+@pytest.fixture
+def gerant(db, organization):
     """Create a GERANT user."""
     u = User.objects.create_user(
         email="gerant@test.tg", password="Testpass123!",
         role=Role.GERANT, phone="+228 90 00 00 01",
+        organization=organization,
     )
     return u
 
 
 @pytest.fixture
-def comptable(db):
+def comptable(db, organization):
     """Create a COMPTABLE user."""
     u = User.objects.create_user(
         email="comptable@test.tg", password="Testpass123!",
         role=Role.COMPTABLE, phone="+228 91 00 00 02",
+        organization=organization,
     )
     return u
 
 
 @pytest.fixture
-def caissier(db):
+def caissier(db, organization):
     """Create a CAISSIER user."""
     u = User.objects.create_user(
         email="caissier@test.tg", password="Testpass123!",
         role=Role.CAISSIER, phone="+228 92 00 00 03",
+        organization=organization,
     )
     return u
 

@@ -17,12 +17,19 @@ from finance.models import Payment, Invoice, Expense, Account, Channel, PaymentS
 from finance.services.forecast import forecast_cashflow
 
 
-def compute_kpis() -> dict[str, Any]:
+def compute_kpis(organization=None) -> dict[str, Any]:
     """
     Compute ~15 KPIs for the dashboard and TresorIA chatbot.
-
-    Returns a dict with all KPIs needed by the frontend.
+    Toujours scopé à l'organisation (source de vérité ledger).
     """
+    payments = Payment.objects.all()
+    expenses = Expense.objects.all()
+    invoices = Invoice.objects.all()
+    if organization is not None:
+        payments = payments.filter(organization=organization)
+        expenses = expenses.filter(organization=organization)
+        invoices = invoices.filter(organization=organization)
+
     now = datetime.now(timezone.utc)
     seven_days_ago = now - timedelta(days=7)
     thirty_days_ago = now - timedelta(days=30)
@@ -30,7 +37,7 @@ def compute_kpis() -> dict[str, Any]:
     # ── Soldes par canal ──────────────────────────────────────────────
     solde_par_canal = {}
     for channel_code, _label in Channel.choices:
-        total = Payment.objects.filter(
+        total = payments.filter(
             channel=channel_code, paid_at__lte=now
         ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
         solde_par_canal[channel_code] = float(total)
@@ -38,37 +45,37 @@ def compute_kpis() -> dict[str, Any]:
     solde_total = sum(solde_par_canal.values())
 
     # ── Encaissements / décaissements 7j & 30j ───────────────────────
-    encaisse_7j = Payment.objects.filter(
+    encaisse_7j = payments.filter(
         paid_at__gte=seven_days_ago
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
-    encaisse_30j = Payment.objects.filter(
+    encaisse_30j = payments.filter(
         paid_at__gte=thirty_days_ago
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
-    decaisse_7j = Expense.objects.filter(
+    decaisse_7j = expenses.filter(
         paid_at__gte=seven_days_ago
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
-    decaisse_30j = Expense.objects.filter(
+    decaisse_30j = expenses.filter(
         paid_at__gte=thirty_days_ago
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
     # ── Factures ─────────────────────────────────────────────────────
-    factures_en_attente = Invoice.objects.filter(status=InvoiceStatus.EN_ATTENTE).count()
-    factures_en_retard = Invoice.objects.filter(
+    factures_en_attente = invoices.filter(status=InvoiceStatus.EN_ATTENTE).count()
+    factures_en_retard = invoices.filter(
         status=InvoiceStatus.EN_ATTENTE,
         due_date__lt=now.date(),
     ).count()
 
     # ── Paiements ────────────────────────────────────────────────────
-    paiements_a_valider = Payment.objects.filter(status=PaymentStatus.A_VALIDER).count()
-    nb_anomalies = Payment.objects.filter(status=PaymentStatus.ANOMALIE).count()
-    paiements_non_rattaches = Payment.objects.filter(status=PaymentStatus.NON_RATTACHE).count()
+    paiements_a_valider = payments.filter(status=PaymentStatus.A_VALIDER).count()
+    nb_anomalies = payments.filter(status=PaymentStatus.ANOMALIE).count()
+    paiements_non_rattaches = payments.filter(status=PaymentStatus.NON_RATTACHE).count()
 
     # ── Top 5 clients (par montant payé) ──────────────────────────────
     top_clients = (
-        Payment.objects.exclude(payer_name="")
+        payments.exclude(payer_name="")
         .values("payer_name")
         .annotate(total=Sum("amount"), count=Count("id"))
         .order_by("-total")[:5]
@@ -79,21 +86,22 @@ def compute_kpis() -> dict[str, Any]:
     ]
 
     # ── Prévisions Holt-Winters ──────────────────────────────────────
-    # Use cached forecast if available, else compute on-the-fly
     from finance.models import ForecastCache
+    fc = ForecastCache.objects.all()
+    if organization is not None:
+        fc = fc.filter(organization=organization)
     try:
-        cached_30 = ForecastCache.objects.get(days=30)
+        cached_30 = fc.get(days=30)
         prevision_j30 = sum(cached_30.forecast_data) if cached_30.forecast_data else 0.0
     except ForecastCache.DoesNotExist:
-        # Compute on-the-fly (slower)
-        f30 = forecast_cashflow(days=30)
+        f30 = forecast_cashflow(days=30, organization=organization)
         prevision_j30 = f30.get("cumulative_forecast", 0.0)
 
     try:
-        cached_7 = ForecastCache.objects.get(days=7)
+        cached_7 = fc.get(days=7)
         prevision_j7 = sum(cached_7.forecast_data) if cached_7.forecast_data else 0.0
     except ForecastCache.DoesNotExist:
-        f7 = forecast_cashflow(days=7)
+        f7 = forecast_cashflow(days=7, organization=organization)
         prevision_j7 = f7.get("cumulative_forecast", 0.0)
 
     return {
@@ -123,12 +131,12 @@ def compute_kpis() -> dict[str, Any]:
     }
 
 
-def explain_forecast(days: int = 30) -> dict:
+def explain_forecast(days: int = 30, organization=None) -> dict:
     """Facteurs réellement présents dans les données — aucune cause inventée."""
     from datetime import datetime, timedelta, timezone
     from finance.models import Expense, Invoice, InvoiceStatus
 
-    kpis = compute_kpis()
+    kpis = compute_kpis(organization)
     now = datetime.now(timezone.utc)
     horizon = now.date() + timedelta(days=days)
     due = Invoice.objects.filter(
@@ -136,6 +144,8 @@ def explain_forecast(days: int = 30) -> dict:
         due_date__gte=now.date(),
         due_date__lte=horizon,
     )
+    if organization is not None:
+        due = due.filter(organization=organization)
     due_total = due.aggregate(t=Sum("amount"))["t"] or Decimal("0")
     recurring = (
         Expense.objects.filter(paid_at__gte=now - timedelta(days=30))
@@ -143,6 +153,16 @@ def explain_forecast(days: int = 30) -> dict:
         .annotate(total=Sum("amount"))
         .order_by("-total")
     )
+    if organization is not None:
+        recurring = (
+            Expense.objects.filter(
+                organization=organization,
+                paid_at__gte=now - timedelta(days=30),
+            )
+            .values("category")
+            .annotate(total=Sum("amount"))
+            .order_by("-total")
+        )
     factors = []
     if kpis["encaisse_30j"]:
         factors.append({

@@ -9,8 +9,11 @@ from finance.services.anomalies import detect_anomalies
 from finance.services.matcher import match_payment
 
 
-def existing_by_ref(provider_ref: str) -> Payment | None:
-    return Payment.objects.filter(provider_ref=provider_ref).first()
+def existing_by_ref(provider_ref: str, organization=None) -> Payment | None:
+    qs = Payment.objects.filter(provider_ref=provider_ref)
+    if organization is not None:
+        qs = qs.filter(organization=organization)
+    return qs.first()
 
 
 def duplicate_response(payment: Payment) -> dict:
@@ -36,12 +39,14 @@ def ingest_normalized(tx: NormalizedTransaction, user, *, apply_match: bool = Tr
     """
     fields = tx.to_ledger_fields()
     ref = fields["provider_ref"]
-    existing = existing_by_ref(ref)
+    org = getattr(user, "organization", None)
+    existing = existing_by_ref(ref, org)
     if existing:
         return existing, False
 
     with transaction.atomic():
         payment = Payment(
+            organization=org,
             provider_ref=ref,
             amount=fields["amount"],
             channel=fields["channel"],

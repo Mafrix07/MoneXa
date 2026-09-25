@@ -4,6 +4,7 @@ Django settings for MoneXa — Fintech Treasury Platform.
 Configuration conforme au cahier des charges ESIG Tech Arena 2026 (Défi 2).
 Production : PostgreSQL 16. Tests locaux : SQLite fallback automatique.
 """
+from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
 from decouple import Config, RepositoryEnv, Csv
 import os
@@ -17,8 +18,16 @@ config = Config(RepositoryEnv(str(_env_file))) if _env_file.exists() else Config
 # Sécurité
 # ──────────────────────────────────────────────────────────────────────────
 SECRET_KEY = config("SECRET_KEY", default="dev-insecure-key-change-me-in-prod")
-DEBUG = config("DEBUG", default=False, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*", cast=Csv())
+DEBUG = config("DEBUG", default=True, cast=bool)
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
+_INSECURE_KEYS = {
+    "dev-insecure-key-change-me-in-prod",
+    "change-me-in-production-please-use-a-long-random-string",
+}
+if not DEBUG and SECRET_KEY in _INSECURE_KEYS:
+    raise ImproperlyConfigured("SECRET_KEY de production invalide. Définissez un secret long et unique.")
+if not DEBUG and ALLOWED_HOSTS == ["*"]:
+    raise ImproperlyConfigured("ALLOWED_HOSTS=* est interdit hors DEBUG.")
 
 # ──────────────────────────────────────────────────────────────────────────
 # Applications
@@ -43,7 +52,7 @@ INSTALLED_APPS = [
 
     # Local
     "accounts",
-    "finance",
+    "finance.apps.FinanceConfig",
     "auditing",
     "reporting",
     "assistant",
@@ -53,6 +62,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "monexa_config.middleware.RequestIdMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -233,5 +243,18 @@ LOGGING = {
     },
     "loggers": {
         "monexa": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
     },
 }
+
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=False, cast=bool)
+    CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=False, cast=bool)
+    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
+    X_FRAME_OPTIONS = "DENY"
+
+RUN_SEED_DEMO = config("RUN_SEED_DEMO", default=False, cast=bool)
+REDIS_URL = config("REDIS_URL", default="")
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
