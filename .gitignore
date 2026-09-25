@@ -1,3 +1,8 @@
+# Documents & Spécifications
+*.docx
+*.pdf
+~$*.docx
+
 __pycache__/
 *.py[cod]
 *$py.class

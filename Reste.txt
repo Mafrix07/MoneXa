@@ -1,0 +1,23 @@
+### 4. Environnement & Outillage
+
+- docker-compose.yml présent et prêt pour déployer PostgreSQL 16 et Django.
+- seed_demo prêt pour injecter 3 mois d'historique, 50 factures, 200 paiements et 3 anomalies typées.
+- Documentation dans docs/ (api-reference.md, design-system.md, rbac-matrix.md, deployment.md) très professionnelle.
+
+### Plan d'Action Recommandé (Ordre de Priorité)
+
+1. Priorité Urgente #1 : Créer le code Flutter dans mobile_app/lib/
+   - Mettre en place l'architecture Clean Architecture avec BLoC.
+   - Implémenter les 4 écrans indispensables pour la démo de 5 minutes :
+     - Écran de Login (JWT).
+     - Écran Dashboard (KPIs, soldes par canal / Money/ Moov/ Flooz).
+     - Écran d'Upload d'une facture (sélection photo + loader animé « Analyse IA en cours... » + confirmation).
+     - Écran Liste des paiements (À valider, Réconciliés, Anomalies).
+
+2. Priorité #2 : Tester et valider le Backend localement
+   - Créer un environnement virtuel Python ou démarrer les conteneurs Docker.
+   - Exécuter les migrations et le seed_demo.
+   - Lancer la suite des 40 tests pytest pour s'assurer que tout est vert.
+
+3. Priorité #3 : Activer l'appel réel Vision dans ai_pipeline.py
+   - Permettre soit l'appel réel Gemini/GPT-4o-mini si une clé API est fournie, soit le mock déterministe en fallback automatique si pas de connexion.
