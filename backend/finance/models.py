@@ -18,7 +18,6 @@ from django.conf import settings
 class Channel(models.TextChoices):
     TMONEY = "TMONEY", "T-Money"
     MOOV = "MOOV", "Moov Money"
-    FLOOZ = "FLOOZ", "Flooz"
     BANQUE = "BANQUE", "Banque"
     ESPECES = "ESPECES", "Espèces"
 
@@ -58,7 +57,7 @@ class ExpenseCategory(models.TextChoices):
 # Models
 # ──────────────────────────────────────────────────────────────────────────
 class Account(models.Model):
-    """Treasury account per channel (T-Money, Moov, Flooz, Banque, Espèces)."""
+    """Treasury account per channel (T-Money, Moov Money, Banque, Espèces)."""
     organization = models.ForeignKey(
         "accounts.Organization",
         on_delete=models.PROTECT,
@@ -290,7 +289,6 @@ class Expense(models.Model):
 class ConnectorKind(models.TextChoices):
     TMONEY = "TMONEY", "T-Money"
     MOOV = "MOOV", "Moov Money"
-    FLOOZ = "FLOOZ", "Flooz"
     BANQUE = "BANQUE", "Banque"
     ESPECES = "ESPECES", "Caisse"
     CSV = "CSV", "CSV / Excel"
@@ -324,7 +322,7 @@ class FinancialSource(models.Model):
     """
     Source financière affichée dans « Sources ».
 
-    Les connecteurs T-Money / Moov / Flooz / banque sont SIMULÉS :
+    Les connecteurs T-Money / Moov / banque sont SIMULÉS :
     aucune API opérateur n'est branchée. L'architecture permet de
     remplacer Simulated*Connector par une intégration réelle plus tard.
     """

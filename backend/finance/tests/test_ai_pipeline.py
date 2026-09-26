@@ -17,7 +17,7 @@ def test_extraction_returns_valid_schema():
     assert "extraction" in result
     assert isinstance(result["extraction"], PaymentExtraction)
     assert result["montant"] > 0
-    assert result["operator"] in ("TMONEY", "MOOV", "FLOOZ")
+    assert result["operator"] in ("TMONEY", "MOOV")
     assert 0 <= result["ai_confidence"] <= 1
 
 

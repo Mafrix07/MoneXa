@@ -10,7 +10,7 @@ from .sms_connector import SMSConnector
 _MAP = {
     "TMONEY": TMoneyConnector,
     "MOOV": MoovConnector,
-    "FLOOZ": FloozConnector,
+    "FLOOZ": MoovConnector,  # Alias : même entité que Moov Money
     "BANQUE": BankConnector,
     "ESPECES": CashConnector,
     "CSV": CSVConnector,

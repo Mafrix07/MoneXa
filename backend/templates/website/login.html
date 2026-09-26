@@ -5,16 +5,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Connexion — MONEXA</title>
-  <link rel="icon" type="image/png" href="{% static 'website/img/MONEXA_2_without_slogan.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'website/img/brand/favicon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="{% static 'website/css/monexa-app.css' %}?v=3" rel="stylesheet">
+  <link href="{% static 'website/css/monexa-app.css' %}?v=4" rel="stylesheet">
 </head>
 <body class="mx-app">
   <main class="mx-login">
     <section class="mx-login__visual">
-      <img src="{% static 'website/img/MONEXA_2_without_slogan.png' %}" width="180" height="48" alt="MONEXA">
+      <img class="mx-login__brand" src="{% static 'website/img/brand/monexa-dark.png' %}" width="200" height="44" alt="MONEXA">
       <div>
         <h2>Gérez votre trésorerie. Comprenez vos flux. Décidez avec confiance.</h2>
         <p style="color:#9bb0d0;max-width:36ch;margin-top:1rem">Mobile Money, banque et caisse dans un ledger unique — sans inventer un solde.</p>
@@ -23,6 +23,7 @@
     </section>
     <section class="mx-login__panel">
       <div class="mx-login__card">
+        <img class="mx-login__brand-light" src="{% static 'website/img/brand/monexa-light.png' %}" width="180" height="36" alt="MONEXA">
         <h1 class="mx-h1">Bienvenue sur MONEXA</h1>
         <p class="mx-lede">Espace web pour gérants et comptables.</p>
         <form method="post">{% csrf_token %}

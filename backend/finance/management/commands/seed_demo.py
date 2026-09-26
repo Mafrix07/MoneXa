@@ -3,7 +3,7 @@ Management command: seed_demo
 
 Génère un jeu de données de démonstration reproductible :
 - 3 utilisateurs (Gérant, Comptable, Caissier) avec mots de passe connus
-- 3 comptes de trésorerie (T-Money, Moov, Flooz)
+- Comptes de trésorerie (T-Money, Moov Money, Banque, Espèces)
 - 50 factures (FACT-2026-0001 à FACT-2026-0050) sur 90 jours
 - 200 paiements répartis par canal avec provider_ref uniques
 - 3 anomalies typées :
@@ -156,8 +156,8 @@ class Command(BaseCommand):
 
         # ── Paiements ──────────────────────────────────────────────
         for i in range(200):
-            channel_code = rng.choice([c[0] for c in Channel.choices[:3]])  # TMONEY, MOOV, FLOOZ
-            prefix_map = {"TMONEY": "TMX", "MOOV": "MV", "FLOOZ": "FL"}
+            channel_code = rng.choice([Channel.TMONEY, Channel.MOOV])
+            prefix_map = {"TMONEY": "TMX", "MOOV": "MV"}
             ref = f"{prefix_map[channel_code]}{rng.randint(1000000000, 9999999999)}"
 
             paid_at = now - timedelta(

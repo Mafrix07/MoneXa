@@ -7,7 +7,6 @@ from finance.models import (
 DEFAULTS = (
     ("Moov Money", "MOOV", Channel.MOOV, IntegrationMethod.SIMULATED_API, "••••4821"),
     ("T-Money", "TMONEY", Channel.TMONEY, IntegrationMethod.SIMULATED_API, "••••1102"),
-    ("Flooz", "FLOOZ", Channel.FLOOZ, IntegrationMethod.SIMULATED_API, "••••7740"),
     ("Banque", "BANQUE", Channel.BANQUE, IntegrationMethod.CSV, "••••9018"),
     ("Caisse", "ESPECES", Channel.ESPECES, IntegrationMethod.MANUAL, ""),
 )

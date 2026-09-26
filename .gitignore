@@ -69,6 +69,9 @@ mobile_app/android/app/release/
 # Vendor HTML Codex (assets recopies dans static/website)
 backend/stocker-1.0.0/
 
+# Nginx / cloudflared portables (scripts/share.ps1)
+tools/
+
 # Env
 .env
 .env.local

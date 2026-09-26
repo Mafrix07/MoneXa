@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MoneXa — Tous vos comptes Mobile Money, une seule vérité</title>
   <meta name="description" content="MoneXa centralise Mixx by Yas, Moov Money et la banque pour les TPE/PME ouest-africaines. L'IA extrait vos preuves de paiement et réconcilie automatiquement.">
-  <link rel="icon" type="image/png" href="{% static 'website/img/MONEXA_2_without_slogan.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'website/img/brand/favicon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -51,20 +51,9 @@
       gap: 1rem; min-height: 72px;
     }
     .brand { display: flex; align-items: center; gap: .75rem; text-decoration: none; }
-    .brand-mark {
-      background: #000;
-      border-radius: 12px;
-      height: 52px;
-      width: 210px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     .brand img {
-      height: 170px;
+      height: 40px;
       width: auto;
-      max-width: none;
       display: block;
     }
     .nav-links { display: flex; gap: 1.25rem; align-items: center; font-size: .92rem; font-weight: 600; color: var(--muted); }
@@ -174,18 +163,10 @@
     footer {
       background: var(--navy); color: #d5def0; padding: 2.2rem 0 1.4rem;
     }
-    footer .foot-logo {
-      height: 48px;
-      width: 190px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     footer .foot-logo img {
-      height: 150px;
+      height: 36px;
       width: auto;
-      max-width: none;
+      display: block;
     }
     .foot-grid { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
     .fine { margin-top: 1.2rem; font-size: .8rem; color: #9aabc9; }
@@ -212,7 +193,7 @@
     <div class="wrap nav">
       <a class="brand" href="#top">
         <span class="brand-mark">
-          <img src="{% static 'website/img/MONEXA_LOGO.png' %}" width="220" height="72" alt="MoneXa — Votre trésorerie centralisée">
+          <img src="{% static 'website/img/brand/monexa-light.png' %}" width="180" height="40" alt="MONEXA">
         </span>
       </a>
       <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
@@ -242,7 +223,7 @@
             <span class="chip">Mixx by Yas</span>
             <span class="chip">Moov Money</span>
             <span class="chip">Banque · FCFA</span>
-            <span class="chip">Lomé · ESIG Tech Arena 2026</span>
+            <span class="chip">Lomé · D3BUG 0R DI3</span>
           </div>
         </div>
         <aside class="mock" aria-label="Aperçu du tableau de bord MoneXa">
@@ -416,12 +397,12 @@
       <div class="wrap">
         <div class="section-head">
           <p class="eyebrow">Équipe</p>
-          <h2>MoneXa, ESIG Tech Arena 2026</h2>
+          <h2>D3BUG 0R DI3</h2>
         </div>
         <div class="team">
           <div>
-            <p>Équipe produit, backend Django et mobile Flutter. On construit à Lomé un outil que le gérant d’une boutique peut ouvrir ce soir — pas un mémoire déguisé en app.</p>
-            <p style="margin-top:.6rem">Contact : team.monexa@esig.example</p>
+            <p>D3BUG 0R DI3 — produit, backend Django et mobile Flutter. On construit à Lomé un outil que le gérant d’une boutique peut ouvrir ce soir — pas un mémoire déguisé en app.</p>
+            <p style="margin-top:.6rem">Contact : hello@monexa.example</p>
           </div>
         </div>
       </div>
@@ -442,7 +423,7 @@
             <input type="email" name="email" placeholder="vous@entreprise.tg" required autocomplete="email">
           </label>
           <button class="btn btn-primary" type="submit">Demander une démo</button>
-          <p id="demo-ok" hidden role="status">Demande enregistrée pour la démo. Écrivez-nous : team.monexa@esig.example</p>
+          <p id="demo-ok" hidden role="status">Demande enregistrée pour la démo. Écrivez-nous : hello@monexa.example</p>
         </form>
       </div>
     </section>
@@ -452,14 +433,14 @@
     <div class="wrap">
       <div class="foot-grid">
         <div class="foot-logo">
-          <img src="{% static 'website/img/MONEXA_2_without_slogan.png' %}" width="180" height="48" alt="MoneXa">
+          <img src="{% static 'website/img/brand/monexa-dark.png' %}" width="180" height="36" alt="MONEXA">
         </div>
         <div>
-          <p>team.monexa@esig.example</p>
-          <p>Lomé, Togo</p>
+          <p>hello@monexa.example</p>
+          <p>Lomé, Togo · D3BUG 0R DI3</p>
         </div>
       </div>
-      <p class="fine">© 2026 MoneXa · Présenté à l’ESIG Tech Arena 2026, Défi 2 — Application mobile. Mixx by Yas et Moov Money sont des marques de leurs opérateurs respectifs.</p>
+      <p class="fine">© 2026 MoneXa · D3BUG 0R DI3. Mixx by Yas et Moov Money sont des marques de leurs opérateurs respectifs.</p>
     </div>
   </footer>
   <script>

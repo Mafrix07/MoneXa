@@ -26,7 +26,7 @@ from finance.services.sms_parser import parse_sms_text
 
 VISION_SYSTEM = (
     "Tu es un assistant d'extraction de données de reçus mobile money ouest-africains "
-    "(T-Money, Moov Money, Flooz). "
+    "(T-Money, Moov Money). "
     "N'invente jamais. Si une information n'est pas visible, retourne null pour ce champ. "
     "Réponds uniquement en JSON avec les clés: montant, reference, operator, "
     "type_operation, emetteur, telephone_emetteur, date_paiement."
@@ -38,7 +38,7 @@ Schéma JSON:
 {
   "montant": number (FCFA, > 0) | null,
   "reference": string (référence opérateur) | null,
-  "operator": "TMONEY" | "MOOV" | "FLOOZ" | null,
+  "operator": "TMONEY" | "MOOV" | null,
   "type_operation": "PAIEMENT",
   "emetteur": string (nom du payeur) | null,
   "telephone_emetteur": string | null,
@@ -47,8 +47,7 @@ Schéma JSON:
 
 Few-shots de formats:
 - T-Money: "Vous avez recu 50 000 FCFA de KOSSI MENSAH. Ref: TMX8847291023"
-- Moov: "Moov Money: credit 25000F de AFI ADJOVI ID MV19283746"
-- Flooz: "Flooz paiement 10000 FCFA recu. Ref FL5544332211"
+- Moov Money: "Moov Money: credit 25000F de AFI ADJOVI ID MV19283746" ou "Flooz paiement 10000 FCFA recu. Ref FL5544332211"
 
 N'invente aucune référence ni aucun montant."""
 
@@ -66,7 +65,7 @@ class PaymentExtraction(BaseModel):
     montant: Decimal = Field(..., gt=0, description="Montant en FCFA, strictement positif")
     reference: str = Field(..., min_length=3, max_length=50,
                             description="Référence opérateur (provider_ref)")
-    operator: str = Field(..., description="TMONEY | MOOV | FLOOZ")
+    operator: str = Field(..., description="TMONEY | MOOV")
     type_operation: str = Field(default="PAIEMENT", description="Type d'opération")
     emetteur: str = Field(..., min_length=2, max_length=200, description="Nom du payeur")
     telephone_emetteur: Optional[str] = Field(default=None, max_length=20)
@@ -79,10 +78,10 @@ class PaymentExtraction(BaseModel):
         mapping = {
             "T-MONEY": "TMONEY", "TMONEY": "TMONEY", "T MONEY": "TMONEY",
             "MOOV": "MOOV", "MOOV MONEY": "MOOV", "MOOV-MONEY": "MOOV",
-            "FLOOZ": "FLOOZ",
+            "FLOOZ": "MOOV",
         }
         if v_up not in mapping:
-            raise ValueError(f"Opérateur inconnu: {v}. Attendu: TMONEY, MOOV, FLOOZ.")
+            raise ValueError(f"Opérateur inconnu: {v}. Attendu: TMONEY, MOOV.")
         return mapping[v_up]
 
     @field_validator("date_paiement")
@@ -156,9 +155,9 @@ def _deterministic_mock(image_bytes: bytes) -> PaymentExtraction:
     digest = hashlib.sha256(image_bytes).hexdigest()
     seed = int(digest[:8], 16)
     amount = (seed % 980_000) + 5_000
-    operators = ["TMONEY", "MOOV", "FLOOZ"]
-    operator = operators[int(digest[8:10], 16) % 3]
-    prefix_map = {"TMONEY": "TMX", "MOOV": "MV", "FLOOZ": "FL"}
+    operators = ["TMONEY", "MOOV"]
+    operator = operators[int(digest[8:10], 16) % len(operators)]
+    prefix_map = {"TMONEY": "TMX", "MOOV": "MV"}
     names = [
         "Kossi Mensah", "Afi Adjovi", "Koffi Agbessi", "Mensah Kossi",
         "Adzo Komla", "Komi Agbélo", "Awa Tchalla", "Yaovi Dotse",

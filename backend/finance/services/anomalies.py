@@ -120,7 +120,7 @@ def score_isolation_forest(organization=None) -> List[dict]:
 
     # Features: amount (log), hour_of_day, channel_encoded
     X = []
-    channel_map = {"TMONEY": 0, "MOOV": 1, "FLOOZ": 2, "BANQUE": 3, "ESPECES": 4}
+    channel_map = {"TMONEY": 0, "MOOV": 1, "FLOOZ": 1, "BANQUE": 2, "ESPECES": 3}
     for p in payments:
         amount_log = float(np.log1p(float(p.amount)))
         hour = p.paid_at.hour

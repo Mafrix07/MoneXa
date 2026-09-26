@@ -78,18 +78,8 @@ class MoovConnector(_SimulatedWalletConnector):
     ]
 
 
-class FloozConnector(_SimulatedWalletConnector):
-    kind = "FLOOZ"
-    channel = "FLOOZ"
-    seed_rows = [
-        {
-            "external_id": "FLSEED001",
-            "amount": "10000",
-            "counterparty": "Afi Adjovi",
-            "reference": "FLSEED001",
-            "occurred_at": "2026-09-23T14:00:00+00:00",
-        },
-    ]
+# Flooz et Moov Money sont la même entité (Moov Africa)
+FloozConnector = MoovConnector
 
 
 class BankConnector(_SimulatedWalletConnector):

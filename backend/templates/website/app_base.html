@@ -5,18 +5,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}MONEXA{% endblock %}</title>
-  <link rel="icon" type="image/png" href="{% static 'website/img/MONEXA_2_without_slogan.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'website/img/brand/favicon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="{% static 'website/css/monexa-app.css' %}?v=3" rel="stylesheet">
+  <link href="{% static 'website/css/monexa-app.css' %}?v=4" rel="stylesheet">
 </head>
 <body class="mx-app">
   <a class="mx-skip" href="#contenu">Aller au contenu</a>
   <div class="mx-shell">
     <aside class="mx-sidebar" id="mx-sidebar">
       <a class="mx-sidebar__brand" href="{% url 'website:dashboard' %}">
-        <img src="{% static 'website/img/MONEXA_2_without_slogan.png' %}" width="140" height="36" alt="MONEXA">
+        <img src="{% static 'website/img/brand/monexa-dark.png' %}" width="160" height="36" alt="MONEXA">
       </a>
       {% if mx_org %}
       <div class="mx-sidebar__org">{{ mx_org.name }} · {{ mx_org.currency }}</div>

@@ -81,7 +81,10 @@ a { color: var(--monexa-primary); }
   text-decoration: none; color: inherit;
 }
 .mx-sidebar__brand img {
-  height: 36px; width: auto; display: block;
+  height: 32px;
+  width: auto;
+  max-width: 168px;
+  display: block;
 }
 .mx-sidebar__org {
   padding: 0 1rem .85rem;
@@ -337,7 +340,14 @@ textarea.mx-input { min-height: 120px; }
 body.mx-collapsed .mx-sidebar { width: 72px; }
 body.mx-collapsed .mx-nav a span, body.mx-collapsed .mx-nav__label,
 body.mx-collapsed .mx-sidebar__org, body.mx-collapsed .mx-sidebar__brand span { display: none; }
-body.mx-collapsed .mx-sidebar__brand { justify-content: center; }
+body.mx-collapsed .mx-sidebar__brand { justify-content: center; padding-inline: .6rem; }
+body.mx-collapsed .mx-sidebar__brand img {
+  width: 36px;
+  height: 36px;
+  max-width: 36px;
+  object-fit: cover;
+  object-position: left center;
+}
 
 .mx-login {
   min-height: 100vh; display: grid; grid-template-columns: 1.05fr .95fr;
@@ -352,16 +362,19 @@ body.mx-collapsed .mx-sidebar__brand { justify-content: center; }
 .mx-login__visual h2 { font-size: 1.85rem; letter-spacing: -.03em; max-width: 18ch; }
 .mx-login__panel { display: flex; align-items: center; justify-content: center; padding: 2rem; }
 .mx-login__card { width: min(420px, 100%); }
-.mx-login__card img.logo { height: 48px; width: auto; margin-bottom: 1.25rem; }
-.mx-login__card .logo-wrap {
-  display: inline-flex;
-  background: #0c1b3a;
-  border-radius: 12px;
-  padding: .45rem .7rem;
-  margin-bottom: 1.25rem;
-  min-width: 200px;
+.mx-login__brand {
+  height: 40px;
+  width: auto;
+  max-width: 220px;
+  display: block;
 }
-.mx-login__card .logo-wrap img { height: 40px; width: auto; max-width: none; display: block; }
+.mx-login__card .mx-login__brand-light {
+  height: 36px;
+  width: auto;
+  max-width: 180px;
+  display: block;
+  margin-bottom: 1.1rem;
+}
 
 .mx-mkt-header {
   display: flex; align-items: center; justify-content: space-between;

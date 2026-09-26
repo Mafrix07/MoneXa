@@ -23,10 +23,10 @@ curl http://localhost:8000/ready/
 docker compose exec backend python manage.py seed_demo
 ```
 
-Accès :
-- Backend API : http://localhost:8000
-- Swagger UI : http://localhost:8000/api/schema/swagger-ui/
-- Django Admin : http://localhost:8000/admin/
+Accès local :
+- Site (Nginx) : http://localhost/
+- API directe (dev) : http://127.0.0.1:8000
+- Partage équipe : voir [`docs/share.md`](share.md)
 
 ## Option 2 — Backend local (Python)
 

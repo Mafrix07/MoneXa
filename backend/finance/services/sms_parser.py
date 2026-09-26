@@ -1,5 +1,5 @@
 """
-Parseur déterministe des SMS Mobile Money (T-Money, Moov, Flooz).
+Parseur déterministe des SMS Mobile Money (T-Money, Moov Money).
 
 Utilisé comme extraction réelle hors LLM (collage SMS / OCR ticket).
 Ne fabrique jamais de référence ni de montant manquants.
@@ -71,9 +71,7 @@ def detect_operator(text: str) -> Optional[str]:
     compact = re.sub(r"\s+", " ", text.upper())
     if any(tok in compact for tok in ("T-MONEY", "TMONEY", "T MONEY", "TMX", "TOGOCEL")):
         return "TMONEY"
-    if "FLOOZ" in compact:
-        return "FLOOZ"
-    if "MOOV" in compact or re.search(r"\bMV[A-Z0-9]{6,}", compact):
+    if "MOOV" in compact or "FLOOZ" in compact or re.search(r"\b(?:MV|FL)[A-Z0-9]{5,}", compact):
         return "MOOV"
     return None
 

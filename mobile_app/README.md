@@ -1,7 +1,7 @@
 # MoneXa — Application Mobile Flutter
 
 Application mobile MoneXa — CFO virtuel pour PME ouest-africaines.
-Hackathon **ESIG Tech Arena 2026** — Défi 2 (Application Mobile).
+Réalisé par **D3BUG 0R DI3**.
 
 ## Architecture
 

@@ -4,7 +4,7 @@
 
 **Plateforme intelligente de trésorerie** : extraction IA des reçus Mobile Money, réconciliation automatique, audit immuable SHA-256, chatbot TresorIA.
 
-Hackathon **ESIG Tech Arena 2026** — Défi 2 (Application Mobile) — 25 au 27 septembre 2026
+Réalisé par **D3BUG 0R DI3** — 25 au 27 septembre 2026
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-4.2-092E20?logo=django&logoColor=white)](https://djangoproject.com)
@@ -75,7 +75,7 @@ En Afrique de l'Ouest, les PME réalisent l'essentiel de leurs encaissements via
 ```
 DEBUG/
 ├── README.md                       # Ce fichier
-├── ESIG_Tech_Arena_2026_Cahier_des_charges.pdf
+├── cahier-des-charges.pdf          # Cahier des charges (PDF)
 ├── code couleur.jpeg               # Charte couleur MoneXa
 ├── .gitignore
 ├── docker-compose.yml              # Django + PostgreSQL
@@ -299,9 +299,8 @@ Voir [`docs/design-system.md`](docs/design-system.md) pour la charte complète.
 
 ## 👨‍💻 Équipe & Contact
 
-Projet réalisé pour l'**ESIG Tech Arena 2026** par l'équipe **MoneXa**.
+Projet réalisé par **D3BUG 0R DI3**.
 
-- **Défi** : Défi 2 — Application Mobile
-- **Contact** : `team.monexa@esig.example`
+- **Contact** : `hello@monexa.example`
 - **Dépôt Git** : https://github.com/Mafrix07/DEBUG
-- **Cahier des charges** : `ESIG_Tech_Arena_2026_Cahier_des_charges.pdf` (32 pages, inclus dans ce dépôt)
+- **Cahier des charges** : PDF à la racine du dépôt

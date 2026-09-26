@@ -294,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             const Center(
               child: Text(
-                'MoneXa v1.0.0 — ESIG Tech Arena 2026 (Défi 2)',
+                'MoneXa v1.0.0 — D3BUG 0R DI3',
                 style: TextStyle(fontSize: 11, color: AppColors.textMuted),
               ),
             ),

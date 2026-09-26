@@ -13,7 +13,7 @@
         <strong>Anomalie détectée</strong>
         <div>{{ row.payment.amount|money }} · {{ row.payment.get_channel_display }} · {{ row.payment.provider_ref }}</div>
         {% for f in row.flags %}
-        <div class="mx-kpi__hint">{{ f.type|default:f.label|default:"Écart de cohérence" }}</div>
+        <div class="mx-kpi__hint">{{ f.type }}{% if f.description %} — {{ f.description }}{% endif %}</div>
         {% empty %}
         <div class="mx-kpi__hint">{{ row.payment.get_status_display }}</div>
         {% endfor %}

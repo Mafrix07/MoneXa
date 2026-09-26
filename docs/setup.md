@@ -18,6 +18,7 @@ copy .env.example .env   # Windows
 # cp .env.example .env   # Unix
 python manage.py migrate
 python manage.py runserver
+# Pour le partage LAN : python manage.py runserver 0.0.0.0:8000
 ```
 
 Ne lancez `seed_demo` / `seed_golden_demo` que pour une démo. Une instance production démarre **vide**.
@@ -29,6 +30,7 @@ Vérification :
 - http://127.0.0.1:8000/health/
 - http://127.0.0.1:8000/ready/
 - http://127.0.0.1:8000/api/schema/swagger-ui/
+- Partage Nginx / lien camarades : [`docs/share.md`](share.md)
 
 ## Docker
 

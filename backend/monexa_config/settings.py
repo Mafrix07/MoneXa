@@ -1,7 +1,7 @@
 """
 Django settings for MoneXa — Fintech Treasury Platform.
 
-Configuration conforme au cahier des charges ESIG Tech Arena 2026 (Défi 2).
+Configuration MoneXa — plateforme de trésorerie (D3BUG 0R DI3).
 Production : PostgreSQL 16. Tests locaux : SQLite fallback automatique.
 """
 from django.core.exceptions import ImproperlyConfigured
@@ -28,6 +28,48 @@ if not DEBUG and SECRET_KEY in _INSECURE_KEYS:
     raise ImproperlyConfigured("SECRET_KEY de production invalide. Définissez un secret long et unique.")
 if not DEBUG and ALLOWED_HOSTS == ["*"]:
     raise ImproperlyConfigured("ALLOWED_HOSTS=* est interdit hors DEBUG.")
+
+BEHIND_PROXY = config("BEHIND_PROXY", default=False, cast=bool)
+if BEHIND_PROXY:
+    USE_X_FORWARDED_HOST = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+_csrf = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
+CSRF_TRUSTED_ORIGINS = [o for o in (list(_csrf) if _csrf else []) if o]
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [
+        f"http://{h}" for h in ALLOWED_HOSTS if h not in ("*", "")
+    ] + [
+        f"https://{h}" for h in ALLOWED_HOSTS if h not in ("*", "")
+    ]
+if DEBUG:
+    ALLOWED_HOSTS = list(ALLOWED_HOSTS)
+    if "*" not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append("*")
+    for origin in (
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://localhost:80",
+        "http://127.0.0.1:80",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "https://*.trycloudflare.com",
+        "https://*.ngrok-free.app",
+        "https://*.ngrok.io",
+    ):
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+    import socket
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ip = info[4][0]
+            if ip.startswith("127."):
+                continue
+            for origin in (f"http://{ip}", f"http://{ip}:80", f"http://{ip}:8000"):
+                if origin not in CSRF_TRUSTED_ORIGINS:
+                    CSRF_TRUSTED_ORIGINS.append(origin)
+    except OSError:
+        pass
 
 # ──────────────────────────────────────────────────────────────────────────
 # Applications
@@ -189,7 +231,7 @@ SPECTACULAR_SETTINGS = {
         "Plateforme intelligente de trésorerie pour PME ouest-africaines. "
         "Extraction IA multimodale des reçus Mobile Money, réconciliation "
         "automatique, audit immuable SHA-256, chatbot TresorIA.\n\n"
-        "ESIG Tech Arena 2026 — Défi 2 — Application Mobile."
+        "D3BUG 0R DI3."
     ),
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
