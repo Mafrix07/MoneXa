@@ -4,9 +4,19 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from accounts.permissions import IsGerant
-from accounts.serializers import OrganizationSerializer, RegisterSerializer, UserSerializer
+from accounts.serializers import (
+    MonexaTokenObtainPairSerializer,
+    OrganizationSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
+
+
+class MonexaTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MonexaTokenObtainPairSerializer
 
 
 class Toggle2FAView(APIView):

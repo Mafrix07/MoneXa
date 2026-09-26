@@ -5,7 +5,6 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView,
 )
@@ -16,7 +15,12 @@ from drf_spectacular.views import (
 )
 
 from accounts.viewsets import MeViewSet, UserViewSet
-from accounts.views import OrganizationMeView, RegisterView, Toggle2FAView
+from accounts.views import (
+    MonexaTokenObtainPairView,
+    OrganizationMeView,
+    RegisterView,
+    Toggle2FAView,
+)
 from finance.viewsets import (
     AccountViewSet,
     InvoiceViewSet,
@@ -53,7 +57,7 @@ urlpatterns = [
 
     # Auth
     path("api/auth/register/", RegisterView.as_view(), name="auth_register"),
-    path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/auth/token/", MonexaTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("api/auth/me/", MeViewSet.as_view({"get": "retrieve"}), name="auth_me"),

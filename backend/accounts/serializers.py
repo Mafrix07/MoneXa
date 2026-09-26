@@ -1,6 +1,8 @@
 """Serializers for the accounts app."""
 from django.utils import timezone
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from .bootstrap import get_or_create_organization
 from .models import Organization, User, Role
 
@@ -13,6 +15,22 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "legal_id", "onboarded_at", "created_at",
         ]
         read_only_fields = ["id", "slug", "onboarded_at", "created_at"]
+
+
+class MonexaTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """JWT login with email + user payload so the client need not call /me immediately."""
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["role"] = user.role
+        token["email"] = user.email
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data["user"] = UserSerializer(self.user).data
+        return data
 
 
 class UserSerializer(serializers.ModelSerializer):

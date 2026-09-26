@@ -24,8 +24,8 @@ void main() {
       ),
     );
 
-    // Vérifie le logo et les titres
-    expect(find.text('MoneXa'), findsOneWidget);
+    // Vérifie le logo officiel et les titres
+    expect(find.byType(Image), findsOneWidget);
     expect(find.text('Connexion'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
 

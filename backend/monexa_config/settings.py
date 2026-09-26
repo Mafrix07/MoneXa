@@ -258,11 +258,14 @@ SIMPLE_JWT = {
 # ──────────────────────────────────────────────────────────────────────────
 # CORS
 # ──────────────────────────────────────────────────────────────────────────
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:8080,http://127.0.0.1:8080",
-    cast=Csv(),
-)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = config(
+        "CORS_ALLOWED_ORIGINS",
+        default="http://localhost:8080,http://127.0.0.1:8080",
+        cast=Csv(),
+    )
 
 # IA — GPT-4o-mini Vision / Gemini Flash (requis pour photos de reçus)
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:monexa/core/theme/app_colors.dart';
+import 'package:monexa/shared/widgets/monexa_logo.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -50,63 +51,36 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;
+          final short = MediaQuery.sizeOf(context).height < 560;
 
           return SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: short ? 8 : 16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo & Titre
                     Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_wallet_rounded,
-                          size: 44,
-                          color: AppColors.accent,
+                      child: MonexaLogo(height: short ? 48 : 64),
+                    ),
+                    if (!short) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'CFO Virtuel & Trésorerie PME Ouest-Africaine',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'MoneXa',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'CFO Virtuel & Trésorerie PME Ouest-Africaine',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
+                    ],
+                    SizedBox(height: short ? 12 : 20),
 
                     // Card Formulaire
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(short ? 12 : 16),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
@@ -130,21 +104,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: short ? 8 : 12),
                           TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
                               labelText: 'Email',
+                              isDense: true,
                               prefixIcon: Icon(Icons.email_outlined, size: 20),
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: short ? 8 : 10),
                           TextField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Mot de passe',
+                              isDense: true,
                               prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -159,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: short ? 12 : 16),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(

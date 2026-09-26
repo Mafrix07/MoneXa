@@ -1,13 +1,16 @@
+import 'package:flutter/foundation.dart';
+
 /// Constantes globales de l'application MoneXa
 class AppConstants {
   AppConstants._();
 
-  // URL de l'API Backend Django
-  // Par défaut 10.0.2.2:8000 pour émulateur Android, ou via --dart-define=API_BASE_URL=...
-  static const String defaultApiUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
-  );
+  static const String _apiFromEnv = String.fromEnvironment('API_BASE_URL');
+
+  /// Android emulator → 10.0.2.2 ; web / desktop → localhost.
+  static String get defaultApiUrl {
+    if (_apiFromEnv.isNotEmpty) return _apiFromEnv;
+    return kIsWeb ? 'http://127.0.0.1:8000' : 'http://10.0.2.2:8000';
+  }
 
   // Clés de stockage sécurisé (flutter_secure_storage)
   static const String tokenKey = 'monexa_access_token';
@@ -31,4 +34,6 @@ class AppConstants {
   static const String roleGerant = 'GERANT';
   static const String roleComptable = 'COMPTABLE';
   static const String roleCaissier = 'CAISSIER';
+
+  static const String logoAsset = 'assets/images/monexa_logo.png';
 }

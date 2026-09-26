@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:monexa/core/theme/app_colors.dart';
 import 'package:monexa/shared/utils/formatters.dart';
 import 'package:monexa/shared/widgets/kpi_card.dart';
+import 'package:monexa/shared/widgets/monexa_logo.dart';
 import 'package:monexa/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:monexa/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 
@@ -34,6 +35,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leadingWidth: 132,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: MonexaLogo(height: 28, alignment: Alignment.centerLeft),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

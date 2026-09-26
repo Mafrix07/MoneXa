@@ -72,6 +72,28 @@ def test_gerant_can_toggle_2fa(gerant_client, gerant):
 
 
 @pytest.mark.django_db
+def test_jwt_login_returns_tokens_and_user(api_client, caissier):
+    """Le login email renvoie JWT + profil pour éviter un GET /me sans token."""
+    resp = api_client.post(
+        "/api/auth/token/",
+        {"email": "caissier@test.tg", "password": "Testpass123!"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert "access" in resp.data
+    assert "refresh" in resp.data
+    assert resp.data["user"]["email"] == "caissier@test.tg"
+    assert resp.data["user"]["role"] == Role.CAISSIER
+
+    me = api_client.get(
+        "/api/auth/me/",
+        HTTP_AUTHORIZATION=f"Bearer {resp.data['access']}",
+    )
+    assert me.status_code == 200
+    assert me.data["email"] == "caissier@test.tg"
+
+
+@pytest.mark.django_db
 def test_user_email_is_unique(db):
     """L'email doit être unique (rule Username_FIELD=email)."""
     User = pytest.importorskip("accounts.models").User

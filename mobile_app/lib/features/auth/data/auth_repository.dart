@@ -44,12 +44,26 @@ class AuthRepository {
         data: {'email': email.trim(), 'password': password},
       );
 
-      final access = response.data['access'];
-      final refresh = response.data['refresh'];
+      final access = response.data['access'] as String;
+      final refresh = response.data['refresh'] as String;
 
-      // Récupération du profil
-      final meResponse = await _client.dio.get(ApiEndpoints.me);
-      final user = UserModel.fromJson(meResponse.data);
+      // Persister le JWT AVANT /me — sinon l'intercepteur n'envoie pas le Bearer.
+      await _storage.write(key: AppConstants.tokenKey, value: access);
+      await _storage.write(key: AppConstants.refreshTokenKey, value: refresh);
+
+      late final UserModel user;
+      final embedded = response.data['user'];
+      if (embedded is Map<String, dynamic>) {
+        user = UserModel.fromJson(embedded);
+      } else if (embedded is Map) {
+        user = UserModel.fromJson(Map<String, dynamic>.from(embedded));
+      } else {
+        final meResponse = await _client.dio.get(
+          ApiEndpoints.me,
+          options: Options(headers: {'Authorization': 'Bearer $access'}),
+        );
+        user = UserModel.fromJson(meResponse.data);
+      }
 
       await _saveSession(user, access, refresh);
       return user;
