@@ -217,18 +217,20 @@ def test_09_duplicate_operator_ref_and_near_duplicate(caissier_client, caissier,
 
 
 @pytest.mark.django_db
-def test_10_caissier_cannot_create_invoice(caissier_client):
+def test_10_caissier_can_create_invoice(caissier_client):
     resp = caissier_client.post(
         "/api/invoices/",
         {
-            "client_name": "Interdit",
-            "amount": "1000",
+            "client_name": "Snack Avenue",
+            "amount": "15000",
             "issue_date": str(dj_timezone.now().date()),
             "due_date": str((dj_timezone.now() + timedelta(days=7)).date()),
         },
         format="json",
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 201
+    assert resp.data["reference"].startswith("FACT-")
+    assert resp.data["monexa_ref"].startswith("MXA-")
 
 
 @pytest.mark.django_db

@@ -51,7 +51,7 @@ class AccountViewSet(OrgMixin, viewsets.ReadOnlyModelViewSet):
 
 class InvoiceViewSet(OrgMixin, viewsets.ModelViewSet):
     """
-    /api/invoices/ — lecture org entière ; écriture COMPTABLE+.
+    /api/invoices/ — lecture org entière ; création CAISSIER+ ; modification COMPTABLE+.
     """
     queryset = Invoice.objects.all().order_by("-issue_date")
     serializer_class = InvoiceSerializer
@@ -61,7 +61,7 @@ class InvoiceViewSet(OrgMixin, viewsets.ModelViewSet):
     ordering_fields = ["issue_date", "due_date", "amount"]
 
     def get_permissions(self):
-        if self.action in ("create", "update", "partial_update", "destroy", "validate_invoice"):
+        if self.action in ("update", "partial_update", "destroy", "validate_invoice"):
             return [IsComptableOrHigher()]
         return [IsCaissierOrHigher()]
 

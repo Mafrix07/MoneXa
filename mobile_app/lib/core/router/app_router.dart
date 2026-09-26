@@ -12,6 +12,8 @@ import '../../features/intelligence/presentation/screens/audit_screen.dart';
 import '../../features/intelligence/presentation/screens/explain_screen.dart';
 import '../../features/intelligence/presentation/screens/forecast_screen.dart';
 import '../../features/intelligence/presentation/screens/sources_screen.dart';
+import '../../features/invoices/presentation/screens/invoice_create_screen.dart';
+import '../../features/invoices/presentation/screens/invoices_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -75,6 +77,18 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/invoices',
+      name: 'invoices',
+      builder: (context, state) => const InvoicesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/invoices/new',
+      name: 'invoice-create',
+      builder: (context, state) => const InvoiceCreateScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

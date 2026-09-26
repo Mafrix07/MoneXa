@@ -1,4 +1,6 @@
 """Vitrine + espace métier web. Lecture des services existants, pas de nouvelle logique financière."""
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
@@ -14,11 +16,13 @@ from accounts.models import User
 from accounts.tenancy import filter_queryset_by_org
 from assistant.services import answer_question
 from auditing.models import AuditLog
+from auditing.services import log_action
 from finance.models import (
     Account,
     Channel,
     FinancialSource,
     Invoice,
+    InvoiceStatus,
     MatchMethod,
     Payment,
     PaymentStatus,
@@ -32,7 +36,7 @@ from finance.services.pos import generate_pos_secret
 from finance.services.sync import sync_source
 from reporting.services import compute_kpis, explain_forecast
 
-from .forms import AssistantForm, ContactForm, EmailAuthenticationForm, EvidenceTextForm
+from .forms import AssistantForm, ContactForm, EmailAuthenticationForm, EvidenceTextForm, InvoiceCreateForm
 
 
 def home(request):
@@ -231,13 +235,81 @@ def payment_review(request, pk):
 def invoices(request):
     qs = _invoices_qs(request)
     status_filter = request.GET.get("status") or ""
+    q = (request.GET.get("q") or "").strip()
     if status_filter:
         qs = qs.filter(status=status_filter)
+    if q:
+        qs = qs.filter(
+            Q(reference__icontains=q)
+            | Q(monexa_ref__icontains=q)
+            | Q(client_name__icontains=q)
+            | Q(client_phone__icontains=q)
+        )
     page = Paginator(qs, 25).get_page(request.GET.get("page"))
     return render(
         request,
         "website/invoices.html",
-        {"nav": "invoices", "page": page, "invoices": page.object_list, "status_filter": status_filter},
+        {
+            "nav": "invoices",
+            "page": page,
+            "invoices": page.object_list,
+            "status_filter": status_filter,
+            "q": q,
+        },
+    )
+
+
+@login_required
+def invoice_create(request):
+    if not request.user.is_caissier_or_higher():
+        return HttpResponseForbidden()
+    today = dj_timezone.now().date()
+    initial = {
+        "issue_date": today,
+        "due_date": today + timedelta(days=7),
+    }
+    form = InvoiceCreateForm(request.POST or None, initial=initial)
+    if request.method == "POST" and form.is_valid():
+        org = request.user.organization
+        invoice = Invoice(
+            organization=org,
+            reference=Invoice.generate_reference(org),
+            client_name=form.cleaned_data["client_name"],
+            client_phone=form.cleaned_data.get("client_phone") or "",
+            amount=form.cleaned_data["amount"],
+            issue_date=form.cleaned_data["issue_date"],
+            due_date=form.cleaned_data["due_date"],
+            status=InvoiceStatus.EMISE,
+            created_by=request.user,
+        )
+        invoice.save()
+        log_action(
+            user=request.user,
+            action="REFERENCE_GENEREE",
+            entity="Invoice",
+            entity_id=str(invoice.pk),
+            details={"reference": invoice.reference, "monexa_ref": invoice.monexa_ref},
+        )
+        messages.success(
+            request,
+            f"Facture {invoice.reference} créée — à communiquer : {invoice.monexa_ref}.",
+        )
+        return redirect("website:invoice_detail", pk=invoice.pk)
+    return render(
+        request,
+        "website/invoice_form.html",
+        {"nav": "invoices", "form": form},
+    )
+
+
+@login_required
+def invoice_detail(request, pk):
+    invoice = get_object_or_404(_invoices_qs(request), pk=pk)
+    payments = invoice.payments.all().order_by("-paid_at")
+    return render(
+        request,
+        "website/invoice_detail.html",
+        {"nav": "invoices", "invoice": invoice, "payments": payments},
     )
 
 

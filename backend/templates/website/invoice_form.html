@@ -1,0 +1,20 @@
+{% extends "website/app_base.html" %}
+{% block title %}Nouvelle facture — MONEXA{% endblock %}
+{% block heading %}Nouvelle facture{% endblock %}
+{% block content %}
+<h2 class="mx-h1">Nouvelle facture</h2>
+<p class="mx-lede">Le numéro FACT et la référence de paiement MXA sont générés à l'enregistrement. Communiquez MXA au client pour le SMS / la caisse.</p>
+<form method="post" class="mx-card" style="max-width:32rem">{% csrf_token %}
+  {% for field in form %}
+  <p>
+    <label class="mx-kpi__label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<span role="alert">{{ field.errors.0 }}</span>{% endif %}
+  </p>
+  {% endfor %}
+  <div style="display:flex;gap:.5rem;margin-top:1rem">
+    <button class="mx-btn mx-btn--primary" type="submit">Créer</button>
+    <a class="mx-btn mx-btn--ghost" href="{% url 'website:invoices' %}">Annuler</a>
+  </div>
+</form>
+{% endblock %}

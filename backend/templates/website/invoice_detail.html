@@ -1,0 +1,35 @@
+{% extends "website/app_base.html" %}
+{% load monexa %}
+{% block title %}{{ invoice.reference }} — MONEXA{% endblock %}
+{% block heading %}Facture{% endblock %}
+{% block content %}
+<p class="mx-kpi__label">{{ invoice.reference }}</p>
+<p class="mx-h1">{{ invoice.amount|money }}</p>
+<p class="mx-lede">{{ invoice.client_name }}{% if invoice.client_phone %} · {{ invoice.client_phone }}{% endif %}</p>
+{% status_badge invoice.status invoice.get_status_display %}
+
+<div class="mx-grid mx-grid--2" style="margin-top:1.2rem">
+  <section class="mx-card">
+    <h2 class="mx-top__title">Références</h2>
+    <p><strong>Facture</strong><br><code>{{ invoice.reference }}</code></p>
+    <p><strong>Paiement MONEXA</strong><br><code>{{ invoice.monexa_ref }}</code></p>
+    <p class="mx-kpi__hint">À coller dans le SMS ou à envoyer au logiciel de caisse.</p>
+    <p><strong>Émission</strong><br>{{ invoice.issue_date|date:"d/m/Y" }}</p>
+    <p><strong>Échéance</strong><br>{{ invoice.due_date|date:"d/m/Y" }}</p>
+    <p><strong>Payé / dû</strong><br>{{ invoice.amount_paid|money }} / {{ invoice.amount_due|money }}</p>
+  </section>
+  <section class="mx-card">
+    <h2 class="mx-top__title">Paiements rattachés</h2>
+    {% if payments %}
+    <ul class="mx-criteria">
+      {% for p in payments %}
+      <li><a href="{% url 'website:payment_detail' p.pk %}">{{ p.provider_ref }}</a> — {{ p.amount|money }} {% status_badge p.status p.get_status_display %}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mx-kpi__hint">Aucun paiement encore. Le matcher utilisera {{ invoice.monexa_ref }}.</p>
+    {% endif %}
+    <p style="margin-top:1rem"><a class="mx-btn mx-btn--ghost mx-btn--sm" href="{% url 'website:invoices' %}">Toutes les factures</a></p>
+  </section>
+</div>
+{% endblock %}

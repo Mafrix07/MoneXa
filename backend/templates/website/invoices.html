@@ -3,14 +3,25 @@
 {% block title %}Factures — MONEXA{% endblock %}
 {% block heading %}Factures{% endblock %}
 {% block content %}
-<h2 class="mx-h1">Factures</h2>
+<div class="mx-dash-head">
+  <div>
+    <h2 class="mx-h1">Factures</h2>
+    <p class="mx-lede">Émises pour le rapprochement. Le client paie avec la référence MXA.</p>
+  </div>
+  <a class="mx-btn mx-btn--primary" href="{% url 'website:invoice_create' %}">Nouvelle facture</a>
+</div>
+<form method="get" class="mx-filters" style="align-items:center">
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  <input class="mx-input" type="search" name="q" value="{{ q }}" placeholder="Réf, MXA, client…" style="max-width:16rem;min-height:38px">
+  <button class="mx-btn mx-btn--ghost mx-btn--sm" type="submit">Charger</button>
+</form>
 <div class="mx-filters">
   <a href="{% url 'website:invoices' %}" class="{% if not status_filter %}is-on{% endif %}">Toutes</a>
   <a href="?status=EMISE" class="{% if status_filter == 'EMISE' %}is-on{% endif %}">Émises</a>
   <a href="?status=EN_ATTENTE" class="{% if status_filter == 'EN_ATTENTE' %}is-on{% endif %}">En attente</a>
   <a href="?status=PARTIELLEMENT_PAYEE" class="{% if status_filter == 'PARTIELLEMENT_PAYEE' %}is-on{% endif %}">Partielles</a>
   <a href="?status=PAYEE" class="{% if status_filter == 'PAYEE' %}is-on{% endif %}">Payées</a>
-  <a href="?status=RECONCILIE" class="{% if status_filter == 'RECONCILIE' %}is-on{% endif %}">Réconciliées</a>
+  <a href="?status=EN_RETARD" class="{% if status_filter == 'EN_RETARD' %}is-on{% endif %}">En retard</a>
   <a href="?status=ANOMALIE" class="{% if status_filter == 'ANOMALIE' %}is-on{% endif %}">Anomalies</a>
 </div>
 {% if invoices %}
@@ -20,7 +31,7 @@
     <tbody>
     {% for inv in invoices %}
       <tr>
-        <td>{{ inv.reference }}</td>
+        <td><a href="{% url 'website:invoice_detail' inv.pk %}">{{ inv.reference }}</a></td>
         <td><code>{{ inv.monexa_ref }}</code></td>
         <td>{{ inv.client_name }}</td>
         <td class="num">{{ inv.amount|money }}</td>
@@ -34,13 +45,17 @@
 <div class="mx-mobile-cards">
   {% for inv in invoices %}
   <article>
-    <strong>{{ inv.reference }}</strong>
+    <a href="{% url 'website:invoice_detail' inv.pk %}"><strong>{{ inv.reference }}</strong></a>
     <div>{{ inv.monexa_ref }} · {{ inv.client_name }} · {{ inv.amount|money }}</div>
     {% status_badge inv.status inv.get_status_display %}
   </article>
   {% endfor %}
 </div>
 {% else %}
-<div class="mx-empty"><h3>Aucune facture.</h3><p>Les factures émises apparaîtront ici.</p></div>
+<div class="mx-empty">
+  <h3>Aucune facture</h3>
+  <p>{% if q %}Aucun résultat pour cette recherche.{% else %}Créez une facture pour générer FACT-… et MXA-… utilisables à la caisse.{% endif %}</p>
+  <a class="mx-btn mx-btn--primary" href="{% url 'website:invoice_create' %}">Créer une facture</a>
+</div>
 {% endif %}
 {% endblock %}

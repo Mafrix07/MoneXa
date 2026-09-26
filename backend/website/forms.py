@@ -67,3 +67,34 @@ class AssistantForm(forms.Form):
             }
         ),
     )
+
+
+class InvoiceCreateForm(forms.Form):
+    client_name = forms.CharField(
+        max_length=200,
+        label="Client",
+        widget=forms.TextInput(attrs={"class": "mx-input", "placeholder": "Nom du client", "autocomplete": "organization"}),
+    )
+    client_phone = forms.CharField(
+        required=False,
+        max_length=20,
+        label="Téléphone",
+        widget=forms.TextInput(attrs={"class": "mx-input", "placeholder": "+228 …", "autocomplete": "tel"}),
+    )
+    amount = forms.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        min_value=1,
+        label="Montant (FCFA)",
+        widget=forms.NumberInput(attrs={"class": "mx-input", "min": "1", "step": "1"}),
+    )
+    issue_date = forms.DateField(
+        label="Date d'émission",
+        input_formats=["%Y-%m-%d"],
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"class": "mx-input", "type": "date"}),
+    )
+    due_date = forms.DateField(
+        label="Échéance",
+        input_formats=["%Y-%m-%d"],
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"class": "mx-input", "type": "date"}),
+    )

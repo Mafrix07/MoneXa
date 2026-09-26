@@ -48,6 +48,7 @@ def test_gerant_app_pages_200(client, gerant):
         "evidence",
         "users",
         "audit",
+        "invoice_create",
         "about",
         "services",
         "faq",
@@ -77,3 +78,34 @@ def test_payment_detail_loads_after_org_audit_filter(client, gerant):
     resp = client.get(reverse("website:payment_detail", args=[payment.pk]))
     assert resp.status_code == 200
     assert b"TX-DETAIL-1" in resp.content
+
+
+@pytest.mark.django_db
+def test_caissier_creates_and_loads_invoice(client, gerant):
+    from decimal import Decimal
+    from django.utils import timezone as dj_timezone
+    from datetime import timedelta
+
+    client.force_login(gerant)
+    today = dj_timezone.now().date()
+    resp = client.post(
+        reverse("website:invoice_create"),
+        {
+            "client_name": "Snack Avenue",
+            "client_phone": "+22890000000",
+            "amount": "25000",
+            "issue_date": today.isoformat(),
+            "due_date": (today + timedelta(days=7)).isoformat(),
+        },
+    )
+    assert resp.status_code == 302
+    listed = client.get(reverse("website:invoices") + "?q=Snack")
+    assert listed.status_code == 200
+    assert b"Snack Avenue" in listed.content
+    assert b"FACT-" in listed.content
+    assert b"MXA-" in listed.content
+    from finance.models import Invoice
+    inv = Invoice.objects.get(client_name="Snack Avenue")
+    detail = client.get(reverse("website:invoice_detail", args=[inv.pk]))
+    assert detail.status_code == 200
+    assert inv.monexa_ref.encode() in detail.content

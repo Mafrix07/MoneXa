@@ -14,7 +14,7 @@
     <p><strong>Contrepartie</strong><br>{{ payment.payer_name|default:"Donnée non disponible" }}</p>
     <p><strong>Téléphone</strong><br>{{ payment.payer_phone|default:"Donnée non disponible" }}</p>
     <p><strong>Référence</strong><br>{{ payment.provider_ref }}</p>
-    <p><strong>Réconciliation</strong><br>{% if payment.invoice %}{{ payment.invoice.reference }} — {{ payment.invoice.client_name }}{% else %}Non rattachée{% endif %}</p>
+    <p><strong>Réconciliation</strong><br>{% if payment.invoice %}<a href="{% url 'website:invoice_detail' payment.invoice.pk %}">{{ payment.invoice.reference }}</a> — {{ payment.invoice.client_name }}{% else %}Non rattachée{% endif %}</p>
     <p><strong>Confiance extraction</strong><br>{% if payment.ai_confidence %}{{ payment.ai_confidence }}{% else %}Donnée non disponible{% endif %}</p>
   </section>
   <section class="mx-card">

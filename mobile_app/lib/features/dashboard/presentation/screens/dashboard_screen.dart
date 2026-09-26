@@ -314,6 +314,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     runSpacing: 8,
                     children: [
                       ActionChip(
+                        label: const Text('Factures'),
+                        onPressed: () => context.push('/invoices'),
+                      ),
+                      ActionChip(
                         label: const Text('À valider'),
                         onPressed: () => context.go('/payments'),
                       ),

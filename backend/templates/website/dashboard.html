@@ -12,7 +12,10 @@
     <h2 class="mx-h1">Tableau de bord</h2>
     <p class="mx-lede">Vue consolidée de la trésorerie{% if mx_org %} — {{ mx_org.name }}{% endif %}. Chiffres issus du ledger.</p>
   </div>
-  <a class="mx-btn mx-btn--primary" href="{% url 'website:payments' %}?status=A_VALIDER">Traiter les paiements</a>
+  <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+    <a class="mx-btn mx-btn--primary" href="{% url 'website:payments' %}?status=A_VALIDER">Traiter les paiements</a>
+    <a class="mx-btn mx-btn--ghost" href="{% url 'website:invoice_create' %}">Nouvelle facture</a>
+  </div>
 </div>
 
 <div class="mx-kpis mx-kpis--4">

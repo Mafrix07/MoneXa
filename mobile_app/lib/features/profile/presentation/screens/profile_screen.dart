@@ -204,6 +204,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             ListTile(
               contentPadding: EdgeInsets.zero,
+              title: const Text('Factures'),
+              subtitle: const Text('Charger la liste ou en créer une'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/invoices'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
               title: const Text('Sources financières'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/sources'),
