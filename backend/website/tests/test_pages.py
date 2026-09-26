@@ -7,6 +7,8 @@ def test_home_page_is_public(client):
     resp = client.get("/")
     assert resp.status_code == 200
     assert b"une seule v" in resp.content or "une seule".encode() in resp.content
+    assert b"scenes/m2.jpeg" in resp.content
+    assert b"scenes/m5.jpeg" in resp.content
 
 
 @pytest.mark.django_db
@@ -54,3 +56,24 @@ def test_gerant_app_pages_200(client, gerant):
     for name in names:
         resp = client.get(reverse(f"website:{name}"))
         assert resp.status_code == 200, name
+
+
+@pytest.mark.django_db
+def test_payment_detail_loads_after_org_audit_filter(client, gerant):
+    from decimal import Decimal
+    from django.utils import timezone as dj_timezone
+    from finance.models import Channel, Payment
+
+    payment = Payment.objects.create(
+        organization=gerant.organization,
+        provider_ref="TX-DETAIL-1",
+        amount=Decimal("15000"),
+        channel=Channel.TMONEY,
+        payer_name="Snack Avenue de la Paix",
+        paid_at=dj_timezone.now(),
+        created_by=gerant,
+    )
+    client.force_login(gerant)
+    resp = client.get(reverse("website:payment_detail", args=[payment.pk]))
+    assert resp.status_code == 200
+    assert b"TX-DETAIL-1" in resp.content

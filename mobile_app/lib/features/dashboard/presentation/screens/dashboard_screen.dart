@@ -80,9 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
+            return const _DashboardSkeleton();
           }
 
           if (state is DashboardError) {
@@ -170,12 +168,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          color: AppColors.primaryDark.withValues(alpha: 0.12),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
@@ -225,6 +223,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
 
                   const SizedBox(height: 16),
+                  if (data.charts.hasFlow)
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Flux 14 jours',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Paiements et dépenses du ledger',
+                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 120,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                for (final day in data.charts.days)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 1),
+                                      child: Column(
+                                        children: [
+                                          Expanded(
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Expanded(
+                                                  child: FractionallySizedBox(
+                                                    heightFactor: (((day['encaisse_pct'] as num?)?.toDouble() ?? 0) / 100).clamp(0.0, 1.0),
+                                                    alignment: Alignment.bottomCenter,
+                                                    child: Container(
+                                                      decoration: const BoxDecoration(
+                                                        color: AppColors.primary,
+                                                        borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 1),
+                                                Expanded(
+                                                  child: FractionallySizedBox(
+                                                    heightFactor: (((day['decaisse_pct'] as num?)?.toDouble() ?? 0) / 100).clamp(0.0, 1.0),
+                                                    alignment: Alignment.bottomCenter,
+                                                    child: Container(
+                                                      decoration: const BoxDecoration(
+                                                        color: AppColors.accent,
+                                                        borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${day['label'] ?? ''}',
+                                            style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
+                                            overflow: TextOverflow.clip,
+                                            maxLines: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (data.charts.hasFlow) const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -302,9 +386,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: AppColors.borderLight),
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,6 +522,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget bar({double h = 14}) {
+      return Container(
+        height: h,
+        width: w,
+        decoration: BoxDecoration(
+          color: AppColors.border,
+          borderRadius: BorderRadius.circular(8),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            height: 128,
+            decoration: BoxDecoration(
+              color: AppColors.primaryDark.withValues(alpha: 0.88),
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: bar(h: 88)),
+              const SizedBox(width: 12),
+              Expanded(child: bar(h: 88)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: bar(h: 88)),
+              const SizedBox(width: 12),
+              Expanded(child: bar(h: 88)),
+            ],
+          ),
+        ],
       ),
     );
   }

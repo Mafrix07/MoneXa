@@ -17,6 +17,7 @@ class DashboardData {
   final int paiementsAValider;
   final int anomaliesNonResolues;
   final List<dynamic> topClients;
+  final DashboardCharts charts;
   final bool isFromCache;
 
   DashboardData({
@@ -33,6 +34,7 @@ class DashboardData {
     required this.paiementsAValider,
     required this.anomaliesNonResolues,
     required this.topClients,
+    required this.charts,
     this.isFromCache = false,
   });
 
@@ -57,6 +59,7 @@ class DashboardData {
       paiementsAValider: json['paiements_a_valider'] ?? 0,
       anomaliesNonResolues: json['anomalies_non_resolues'] ?? json['nb_anomalies'] ?? 0,
       topClients: json['top_5_clients'] ?? [],
+      charts: DashboardCharts.fromJson(json['charts']),
       isFromCache: isFromCache,
     );
   }
@@ -76,6 +79,57 @@ class DashboardData {
       'paiements_a_valider': paiementsAValider,
       'anomalies_non_resolues': anomaliesNonResolues,
       'top_5_clients': topClients,
+      'charts': charts.toJson(),
+    };
+  }
+}
+
+class DashboardCharts {
+  final List<Map<String, dynamic>> days;
+  final bool hasFlow;
+  final List<Map<String, dynamic>> channels;
+  final bool hasChannels;
+  final List<Map<String, dynamic>> statuses;
+  final int statusTotal;
+  final List<Map<String, dynamic>> clients;
+
+  DashboardCharts({
+    required this.days,
+    required this.hasFlow,
+    required this.channels,
+    required this.hasChannels,
+    required this.statuses,
+    required this.statusTotal,
+    required this.clients,
+  });
+
+  factory DashboardCharts.fromJson(dynamic raw) {
+    final json = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
+    List<Map<String, dynamic>> asMaps(dynamic value) {
+      if (value is! List) return [];
+      return value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+
+    return DashboardCharts(
+      days: asMaps(json['days']),
+      hasFlow: json['has_flow'] == true,
+      channels: asMaps(json['channels']),
+      hasChannels: json['has_channels'] == true,
+      statuses: asMaps(json['statuses']),
+      statusTotal: json['status_total'] ?? 0,
+      clients: asMaps(json['clients']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'days': days,
+      'has_flow': hasFlow,
+      'channels': channels,
+      'has_channels': hasChannels,
+      'statuses': statuses,
+      'status_total': statusTotal,
+      'clients': clients,
     };
   }
 }
@@ -106,32 +160,22 @@ class DashboardRepository {
         );
       }
 
-      // Données démo offline par défaut (Cahier des charges Hackathon)
-      final defaultDemo = <String, dynamic>{
-        'solde_total': 4850000.0,
-        'solde_par_canal': {
-          'TMONEY': 2150000.0,
-          'MOOV': 1800000.0,
-          'FLOOZ': 900000.0,
-        },
-        'encaisse_7j': 1450000.0,
-        'decaisse_7j': 620000.0,
-        'flux_net_7j': 830000.0,
-        'encaisse_30j': 6200000.0,
-        'decaisse_30j': 3100000.0,
-        'flux_net_30j': 3100000.0,
-        'factures_en_retard': 4,
-        'factures_en_attente': 12,
-        'paiements_a_valider': 3,
-        'anomalies_non_resolues': 2,
-        'top_5_clients': [
-          {'client_name': 'Ets Kossi & Frères', 'total_amount': 1250000.0},
-          {'client_name': 'Pharmacie du Grand Marché', 'total_amount': 980000.0},
-          {'client_name': 'Boutique Mensah SARL', 'total_amount': 720000.0},
-        ],
-      };
-      await box.put('summary', defaultDemo);
-      return DashboardData.fromJson(defaultDemo, isFromCache: true);
+      return DashboardData.fromJson({
+        'solde_total': 0.0,
+        'solde_par_canal': <String, dynamic>{},
+        'encaisse_7j': 0.0,
+        'decaisse_7j': 0.0,
+        'flux_net_7j': 0.0,
+        'encaisse_30j': 0.0,
+        'decaisse_30j': 0.0,
+        'flux_net_30j': 0.0,
+        'factures_en_retard': 0,
+        'factures_en_attente': 0,
+        'paiements_a_valider': 0,
+        'anomalies_non_resolues': 0,
+        'top_5_clients': [],
+        'charts': {'days': [], 'has_flow': false, 'channels': [], 'has_channels': false, 'statuses': [], 'status_total': 0, 'clients': []},
+      }, isFromCache: true);
     }
   }
 }

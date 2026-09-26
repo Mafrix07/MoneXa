@@ -28,14 +28,14 @@ void main() {
     expect(find.text('Connexion'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
 
-    expect(find.text('Caissier'), findsOneWidget);
-    expect(find.text('Comptable'), findsOneWidget);
-    expect(find.text('Gérant'), findsOneWidget);
+    expect(find.text('Laura'), findsOneWidget);
+    expect(find.text('Djamie'), findsOneWidget);
+    expect(find.text('Judy'), findsOneWidget);
 
-    await tester.tap(find.text('Gérant'));
+    await tester.tap(find.text('Judy'));
     await tester.pump();
 
-    expect(find.text('gerant@monexa.tg'), findsOneWidget);
+    expect(find.text('judy@judyspices.tg'), findsOneWidget);
 
     await authBloc.close();
   });

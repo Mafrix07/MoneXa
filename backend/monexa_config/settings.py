@@ -6,13 +6,11 @@ Production : PostgreSQL 16. Tests locaux : SQLite fallback automatique.
 """
 from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
-from decouple import Config, RepositoryEnv, Csv
+from decouple import AutoConfig, Csv
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Lire UNIQUEMENT le .env du backend (ignore les .env globaux du sandbox)
-_env_file = BASE_DIR / ".env"
-config = Config(RepositoryEnv(str(_env_file))) if _env_file.exists() else Config(os.environ)
+config = AutoConfig(search_path=BASE_DIR)
 
 # ──────────────────────────────────────────────────────────────────────────
 # Sécurité
@@ -28,6 +26,18 @@ if not DEBUG and SECRET_KEY in _INSECURE_KEYS:
     raise ImproperlyConfigured("SECRET_KEY de production invalide. Définissez un secret long et unique.")
 if not DEBUG and ALLOWED_HOSTS == ["*"]:
     raise ImproperlyConfigured("ALLOWED_HOSTS=* est interdit hors DEBUG.")
+
+ALLOWED_HOSTS = list(ALLOWED_HOSTS)
+for _extra in (
+    os.environ.get("RAILWAY_PUBLIC_DOMAIN", ""),
+    os.environ.get("RAILWAY_PRIVATE_DOMAIN", ""),
+):
+    host = _extra.replace("https://", "").replace("http://", "").split("/")[0].strip()
+    if host and host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+for _suffix in (".up.railway.app", ".railway.app", ".railway.internal"):
+    if _suffix not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_suffix)
 
 BEHIND_PROXY = config("BEHIND_PROXY", default=False, cast=bool)
 if BEHIND_PROXY:
@@ -71,6 +81,12 @@ if DEBUG:
     except OSError:
         pass
 
+_public = (os.environ.get("RAILWAY_PUBLIC_DOMAIN") or "").strip()
+if _public:
+    _origin = _public if _public.startswith("http") else f"https://{_public}"
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+
 # ──────────────────────────────────────────────────────────────────────────
 # Applications
 # ──────────────────────────────────────────────────────────────────────────
@@ -104,6 +120,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "monexa_config.middleware.RequestIdMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -186,6 +203,10 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -258,7 +279,7 @@ SIMPLE_JWT = {
 # ──────────────────────────────────────────────────────────────────────────
 # CORS
 # ──────────────────────────────────────────────────────────────────────────
-if DEBUG:
+if DEBUG or config("CORS_ALLOW_ALL", default=False, cast=bool):
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOWED_ORIGINS = config(

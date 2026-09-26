@@ -5,6 +5,58 @@
 {% block content %}
 <h2 class="mx-h1">Sources financières</h2>
 <p class="mx-lede">Les connecteurs opérateurs sont simulés tant qu'aucune API officielle n'est configurée. Les soldes viennent du ledger.</p>
+
+<section class="mx-card" style="margin-bottom:1.25rem">
+  <div class="mx-card__head">
+    <h2 class="mx-top__title">Jeton logiciel de caisse</h2>
+  </div>
+  <p class="mx-lede">Le POS envoie factures et paiements en Bearer <code>mxpos_live_…</code>. MONEXA les passe au matcher existant (MXA, FACT, montant). Le secret n'est affiché qu'une fois.</p>
+  {% if pos_token_once %}
+  <div class="mx-alert" role="status">
+    <p class="mx-kpi__label">Copiez ce jeton maintenant</p>
+    <p><code class="mx-token">{{ pos_token_once }}</code></p>
+    <p class="mx-kpi__hint">POST /api/pos/v1/invoices/ et /api/pos/v1/payments/ — Authorization: Bearer …</p>
+  </div>
+  {% endif %}
+  {% if user.is_gerant %}
+  <form method="post" action="{% url 'website:pos_token_create' %}" class="mx-pos-form">{% csrf_token %}
+    <label class="mx-kpi__label" for="pos-name">Nom</label>
+    <input class="mx-input" id="pos-name" name="name" value="Caisse" maxlength="80">
+    <label class="mx-kpi__label" for="pos-channel">Canal par défaut</label>
+    <select class="mx-select" id="pos-channel" name="channel">
+      {% for code, label in channels %}
+      <option value="{{ code }}"{% if code == 'ESPECES' %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="mx-btn mx-btn--primary" type="submit">Générer un jeton</button>
+  </form>
+  {% endif %}
+  {% if pos_tokens %}
+  <div class="mx-table-wrap" style="margin-top:1rem">
+    <table class="mx-table">
+      <thead><tr><th>Nom</th><th>Canal</th><th>Jeton</th><th>Dernier usage</th><th></th></tr></thead>
+      <tbody>
+      {% for t in pos_tokens %}
+      <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.get_channel_display }}</td>
+        <td><code>…{{ t.token_hint }}</code>{% if t.revoked_at %} · révoqué{% endif %}</td>
+        <td>{% if t.last_used_at %}{{ t.last_used_at|timesince }}{% else %}jamais{% endif %}</td>
+        <td>
+          {% if user.is_gerant and not t.revoked_at %}
+          <form method="post" action="{% url 'website:pos_token_revoke' t.pk %}">{% csrf_token %}
+            <button class="mx-btn mx-btn--danger mx-btn--sm" type="submit">Révoquer</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
 {% if sources %}
 <div class="mx-source-grid">
   {% for s in sources %}

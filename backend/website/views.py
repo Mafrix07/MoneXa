@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone as dj_timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
@@ -21,11 +22,13 @@ from finance.models import (
     MatchMethod,
     Payment,
     PaymentStatus,
+    PosCredential,
 )
 from finance.services.anomalies import detect_anomalies
 from finance.services.forecast import forecast_cashflow
 from finance.services.ingest import duplicate_response, existing_by_ref
 from finance.services.matcher import apply_match_to_payment, explain_payment
+from finance.services.pos import generate_pos_secret
 from finance.services.sync import sync_source
 from reporting.services import compute_kpis, explain_forecast
 
@@ -169,9 +172,10 @@ def payments(request):
 def payment_detail(request, pk):
     payment = get_object_or_404(_payments_qs(request), pk=pk)
     explain = explain_payment(payment)
-    audits = AuditLog.objects.filter(entity="Payment", entity_id=str(payment.pk)).order_by("-timestamp")[:20]
+    audits = AuditLog.objects.filter(entity="Payment", entity_id=str(payment.pk))
     if request.user.organization_id:
         audits = audits.filter(organization_id=request.user.organization_id)
+    audits = audits.order_by("-timestamp")[:20]
     pending = []
     if request.user.is_comptable_or_higher():
         pending = list(
@@ -295,6 +299,8 @@ def sources(request):
     kpis = compute_kpis(organization=request.user.organization)
     srcs = filter_queryset_by_org(FinancialSource.objects.all(), request.user)
     accounts = filter_queryset_by_org(Account.objects.filter(is_active=True), request.user)
+    pos_tokens = filter_queryset_by_org(PosCredential.objects.all(), request.user)
+    pos_token_once = request.session.pop("pos_token_once", "")
     return render(
         request,
         "website/sources.html",
@@ -303,6 +309,9 @@ def sources(request):
             "sources": srcs,
             "accounts": accounts,
             "solde_par_canal": kpis.get("solde_par_canal") or {},
+            "pos_tokens": pos_tokens,
+            "pos_token_once": pos_token_once,
+            "channels": Channel.choices,
         },
     )
 
@@ -320,6 +329,48 @@ def source_sync(request, pk):
         request,
         f"Synchronisation {log.status} — {log.created_count} créée(s), {log.ignored_count} ignorée(s).",
     )
+    return redirect("website:sources")
+
+
+@login_required
+@require_POST
+def pos_token_create(request):
+    if not request.user.is_gerant():
+        return HttpResponseForbidden()
+    org = request.user.organization
+    if org is None:
+        messages.error(request, "Organisation manquante.")
+        return redirect("website:sources")
+    raw, digest, hint = generate_pos_secret()
+    name = (request.POST.get("name") or "Caisse").strip()[:80]
+    channel = request.POST.get("channel") or Channel.ESPECES
+    if channel not in Channel.values:
+        channel = Channel.ESPECES
+    PosCredential.objects.create(
+        organization=org,
+        name=name,
+        channel=channel,
+        token_hash=digest,
+        token_hint=hint,
+        created_by=request.user,
+    )
+    request.session["pos_token_once"] = raw
+    messages.success(request, "Jeton caisse créé. Copiez-le maintenant : il ne sera plus affiché.")
+    return redirect("website:sources")
+
+
+@login_required
+@require_POST
+def pos_token_revoke(request, pk):
+    if not request.user.is_gerant():
+        return HttpResponseForbidden()
+    cred = get_object_or_404(
+        filter_queryset_by_org(PosCredential.objects.filter(revoked_at__isnull=True), request.user),
+        pk=pk,
+    )
+    cred.revoked_at = dj_timezone.now()
+    cred.save(update_fields=["revoked_at"])
+    messages.success(request, f"Jeton …{cred.token_hint} révoqué.")
     return redirect("website:sources")
 
 

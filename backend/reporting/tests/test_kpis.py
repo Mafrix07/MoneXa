@@ -67,6 +67,31 @@ def test_solde_par_canal_aggregates_correctly(user):
 
 
 @pytest.mark.django_db
+def test_dashboard_charts_use_real_payment_amounts(user):
+    now = dj_timezone.now()
+    Payment.objects.create(
+        provider_ref="CHART1",
+        amount=Decimal("50000"),
+        channel=Channel.TMONEY,
+        payer_name="ABC SARL",
+        paid_at=now,
+        created_by=user,
+        status=PaymentStatus.RECONCILIE,
+    )
+    kpis = compute_kpis()
+    charts = kpis["charts"]
+    today = charts["days"][-1]
+    assert today["encaisse"] == 50000.0
+    assert charts["has_flow"] is True
+    assert charts["status_total"] == 1
+    recon = next(s for s in charts["statuses"] if s["code"] == PaymentStatus.RECONCILIE)
+    assert recon["count"] == 1
+    assert charts["clients"][0]["name"] == "ABC SARL"
+    assert charts["clients"][0]["total"] == 50000.0
+    assert charts["period"][0]["value"] == 50000.0
+
+
+@pytest.mark.django_db
 def test_dashboard_endpoint_works(gerant_client):
     """L'endpoint /api/dashboard/summary/ répond correctement."""
     resp = gerant_client.get("/api/dashboard/summary/")

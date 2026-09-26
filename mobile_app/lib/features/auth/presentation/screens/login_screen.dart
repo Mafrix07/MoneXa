@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'caissier@monexa.tg');
+  final _emailController = TextEditingController(text: 'laura@judyspices.tg');
   final _passwordController = TextEditingController(text: 'Monexa2026!');
   bool _obscurePassword = true;
 
@@ -82,16 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Container(
                       padding: EdgeInsets.all(short ? 12 : 16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.borderLight),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,21 +179,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         ActionChip(
                           avatar: const Icon(Icons.point_of_sale, size: 16, color: AppColors.primary),
-                          label: const Text('Caissier'),
+                          label: const Text('Laura'),
                           backgroundColor: AppColors.surface,
-                          onPressed: () => _fillAccount('caissier@monexa.tg'),
+                          onPressed: () => _fillAccount('laura@judyspices.tg'),
                         ),
                         ActionChip(
                           avatar: const Icon(Icons.receipt_long, size: 16, color: AppColors.success),
-                          label: const Text('Comptable'),
+                          label: const Text('Djamie'),
                           backgroundColor: AppColors.surface,
-                          onPressed: () => _fillAccount('comptable@monexa.tg'),
+                          onPressed: () => _fillAccount('djamie@judyspices.tg'),
                         ),
                         ActionChip(
                           avatar: const Icon(Icons.admin_panel_settings, size: 16, color: AppColors.accent),
-                          label: const Text('Gérant'),
+                          label: const Text('Judy'),
                           backgroundColor: AppColors.surface,
-                          onPressed: () => _fillAccount('gerant@monexa.tg'),
+                          onPressed: () => _fillAccount('judy@judyspices.tg'),
                         ),
                       ],
                     ),

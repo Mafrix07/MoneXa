@@ -21,6 +21,7 @@ from accounts.views import (
     RegisterView,
     Toggle2FAView,
 )
+from finance.pos_api import PosInvoiceView, PosPaymentView, PosPingView
 from finance.viewsets import (
     AccountViewSet,
     InvoiceViewSet,
@@ -77,6 +78,9 @@ urlpatterns = [
     # Assistant TresorIA
     path("api/assistant/ask/", AskView.as_view(), name="assistant_ask"),
     path("api/evidence/", EvidenceView.as_view(), name="evidence"),
+    path("api/pos/v1/ping/", PosPingView.as_view(), name="pos_ping"),
+    path("api/pos/v1/invoices/", PosInvoiceView.as_view(), name="pos_invoices"),
+    path("api/pos/v1/payments/", PosPaymentView.as_view(), name="pos_payments"),
 
     # Documentation API
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

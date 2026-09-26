@@ -75,30 +75,30 @@ class AuthRepository {
 
       if (isNetworkError) {
         final cleanEmail = email.trim().toLowerCase();
-        if (cleanEmail.contains('caissier')) {
+        if (cleanEmail.contains('laura') || cleanEmail.contains('caissier')) {
           final user = UserModel(
             id: 3,
-            email: 'caissier@monexa.tg',
+            email: 'laura@judyspices.tg',
             role: AppConstants.roleCaissier,
-            displayName: 'Afi Mensah (Caissière)',
+            displayName: 'Laura',
           );
           await _saveSession(user, 'mock_caissier_token', 'mock_refresh_token');
           return user;
-        } else if (cleanEmail.contains('comptable')) {
+        } else if (cleanEmail.contains('djamie') || cleanEmail.contains('comptable')) {
           final user = UserModel(
             id: 2,
-            email: 'comptable@monexa.tg',
+            email: 'djamie@judyspices.tg',
             role: AppConstants.roleComptable,
-            displayName: 'Kofi Lawson (Comptable)',
+            displayName: 'Djamie',
           );
           await _saveSession(user, 'mock_comptable_token', 'mock_refresh_token');
           return user;
-        } else if (cleanEmail.contains('gerant')) {
+        } else if (cleanEmail.contains('judy') || cleanEmail.contains('gerant')) {
           final user = UserModel(
             id: 1,
-            email: 'gerant@monexa.tg',
+            email: 'judy@judyspices.tg',
             role: AppConstants.roleGerant,
-            displayName: 'Directeur Gérant',
+            displayName: 'Judy',
             is2faEnabled: true,
           );
           await _saveSession(user, 'mock_gerant_token', 'mock_refresh_token');

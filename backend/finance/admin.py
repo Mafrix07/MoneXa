@@ -1,7 +1,7 @@
 """Finance admin customization."""
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Account, Invoice, Payment, Expense, ForecastCache, FinancialSource, ConnectorSync
+from .models import Account, Invoice, Payment, Expense, ForecastCache, FinancialSource, ConnectorSync, PosCredential
 
 
 @admin.register(Account)
@@ -129,6 +129,16 @@ class FinancialSourceAdmin(admin.ModelAdmin):
     )
     list_filter = ("connector_kind", "is_simulated", "status")
     readonly_fields = ("last_sync_at", "last_success_at", "last_error", "cursor")
+
+
+@admin.register(PosCredential)
+class PosCredentialAdmin(admin.ModelAdmin):
+    list_display = ("name", "organization", "channel", "token_hint", "created_at", "revoked_at")
+    readonly_fields = ("token_hash", "token_hint", "created_at", "last_used_at")
+    search_fields = ("name", "token_hint")
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(ConnectorSync)

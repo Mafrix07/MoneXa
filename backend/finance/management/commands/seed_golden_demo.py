@@ -14,8 +14,7 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 
-from accounts.models import Role, User
-from accounts.bootstrap import demo_organization
+from accounts.bootstrap import demo_organization, ensure_demo_staff
 from finance.models import (
     Channel, Invoice, InvoiceStatus, MatchMethod, Payment, PaymentStatus,
 )
@@ -32,27 +31,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         org = demo_organization()
-        gerant, _ = User.objects.get_or_create(
-            email="gerant@monexa.tg",
-            defaults={"role": Role.GERANT, "is_staff": True, "organization": org},
-        )
-        gerant.organization = org
-        gerant.set_password("Monexa2026!")
-        gerant.save()
-        caissier, _ = User.objects.get_or_create(
-            email="caissier@monexa.tg",
-            defaults={"role": Role.CAISSIER, "organization": org},
-        )
-        caissier.organization = org
-        caissier.set_password("Monexa2026!")
-        caissier.save()
-        comptable, _ = User.objects.get_or_create(
-            email="comptable@monexa.tg",
-            defaults={"role": Role.COMPTABLE, "is_staff": True, "organization": org},
-        )
-        comptable.organization = org
-        comptable.set_password("Monexa2026!")
-        comptable.save()
+        staff = ensure_demo_staff(org)
+        gerant = staff["GERANT"]
+        caissier = staff["CAISSIER"]
+        comptable = staff["COMPTABLE"]
 
         Payment.objects.filter(
             organization=org,

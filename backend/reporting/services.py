@@ -13,6 +13,7 @@ from decimal import Decimal
 from typing import Any
 
 from django.db.models import Sum, Count, Q
+from django.db.models.functions import TruncDate
 from finance.models import Payment, Invoice, Expense, Account, Channel, PaymentStatus, InvoiceStatus
 from finance.services.forecast import forecast_cashflow
 
@@ -106,6 +107,21 @@ def compute_kpis(organization=None) -> dict[str, Any]:
         f7 = forecast_cashflow(days=7, organization=organization)
         prevision_j7 = f7.get("cumulative_forecast", 0.0)
 
+    charts = build_dashboard_charts(
+        payments=payments,
+        expenses=expenses,
+        solde_par_canal=solde_par_canal,
+        solde_total=solde_total,
+        top_clients=top_clients_list,
+        now=now,
+    )
+    pm = max(float(encaisse_7j), float(decaisse_7j), float(encaisse_30j), float(decaisse_30j), 1.0)
+    charts["period"] = [
+        {"label": "Encaissé 7j", "value": float(encaisse_7j), "pct": round(float(encaisse_7j) / pm * 100, 1), "kind": "in"},
+        {"label": "Décaissé 7j", "value": float(decaisse_7j), "pct": round(float(decaisse_7j) / pm * 100, 1), "kind": "out"},
+        {"label": "Encaissé 30j", "value": float(encaisse_30j), "pct": round(float(encaisse_30j) / pm * 100, 1), "kind": "in"},
+        {"label": "Décaissé 30j", "value": float(decaisse_30j), "pct": round(float(decaisse_30j) / pm * 100, 1), "kind": "out"},
+    ]
     return {
         # Soldes
         "solde_total": solde_total,
@@ -130,6 +146,128 @@ def compute_kpis(organization=None) -> dict[str, Any]:
         "prevision_j30": prevision_j30,
         # Top clients
         "top_5_clients": top_clients_list,
+        "charts": charts,
+    }
+
+
+def build_dashboard_charts(
+    *,
+    payments,
+    expenses,
+    solde_par_canal: dict,
+    solde_total: float,
+    top_clients: list,
+    now: datetime,
+    days: int = 14,
+) -> dict[str, Any]:
+    """Séries agrégées depuis le ledger. Aucun montant inventé."""
+    start = (now - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    in_by_day: dict = defaultdict(float)
+    for row in (
+        payments.filter(paid_at__gte=start, paid_at__lte=now)
+        .annotate(day=TruncDate("paid_at"))
+        .values("day")
+        .annotate(total=Sum("amount"))
+    ):
+        if row["day"]:
+            in_by_day[row["day"].isoformat()] = float(row["total"] or 0)
+
+    out_by_day: dict = defaultdict(float)
+    for row in (
+        expenses.filter(paid_at__gte=start, paid_at__lte=now)
+        .annotate(day=TruncDate("paid_at"))
+        .values("day")
+        .annotate(total=Sum("amount"))
+    ):
+        if row["day"]:
+            out_by_day[row["day"].isoformat()] = float(row["total"] or 0)
+
+    series = []
+    max_flow = 0.0
+    for i in range(days):
+        d = start.date() + timedelta(days=i)
+        key = d.isoformat()
+        enc = in_by_day.get(key, 0.0)
+        dec = out_by_day.get(key, 0.0)
+        max_flow = max(max_flow, enc, dec)
+        series.append({"date": key, "label": d.strftime("%d/%m"), "encaisse": enc, "decaisse": dec})
+    for point in series:
+        point["encaisse_pct"] = round((point["encaisse"] / max_flow) * 100, 1) if max_flow else 0
+        point["decaisse_pct"] = round((point["decaisse"] / max_flow) * 100, 1) if max_flow else 0
+
+    channels = []
+    for code, label in Channel.choices:
+        amount = float(solde_par_canal.get(code, 0) or 0)
+        channels.append({
+            "code": code,
+            "label": label,
+            "amount": amount,
+            "pct": round((amount / solde_total) * 100, 1) if solde_total else 0,
+        })
+
+    status_rows = {
+        row["status"]: row["c"]
+        for row in payments.values("status").annotate(c=Count("id"))
+    }
+    status_total = sum(status_rows.values()) or 0
+    statuses = []
+    for code, label in PaymentStatus.choices:
+        count = int(status_rows.get(code, 0) or 0)
+        statuses.append({
+            "code": code,
+            "label": label,
+            "count": count,
+            "pct": round((count / status_total) * 100, 1) if status_total else 0,
+        })
+
+    client_max = max((c["total"] for c in top_clients), default=0) or 0
+    clients = [
+        {**c, "pct": round((c["total"] / client_max) * 100, 1) if client_max else 0}
+        for c in top_clients
+    ]
+
+    circ = 226.08
+    offset = 0.0
+    donut = []
+    palette = {
+        "TMONEY": "#063082",
+        "MOOV": "#0f6b45",
+        "BANQUE": "#44546e",
+        "ESPECES": "#3d2b1f",
+        "FLOOZ": "#b45309",
+    }
+    for ch in channels:
+        if not ch["amount"]:
+            continue
+        length = (ch["pct"] / 100.0) * circ
+        donut.append({
+            **ch,
+            "color": palette.get(ch["code"], "#063082"),
+            "dash": f"{length:.2f} {circ:.2f}",
+            "offset": round(-offset, 2),
+        })
+        offset += length
+    if solde_total >= 1_000_000:
+        center = f"{solde_total / 1_000_000:.1f} M"
+    elif solde_total >= 1_000:
+        center = f"{solde_total / 1_000:.0f} k"
+    else:
+        center = f"{solde_total:,.0f}"
+
+    return {
+        "days": series,
+        "max_flow": max_flow,
+        "has_flow": max_flow > 0,
+        "channels": channels,
+        "has_channels": solde_total > 0,
+        "statuses": statuses,
+        "status_total": status_total,
+        "clients": clients,
+        "window_days": days,
+        "donut": donut,
+        "donut_center": center,
+        "donut_circ": circ,
     }
 
 

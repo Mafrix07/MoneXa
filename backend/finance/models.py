@@ -134,6 +134,14 @@ class Invoice(models.Model):
         on_delete=models.PROTECT,
         related_name="invoices_created",
     )
+    pos_ticket_id = models.CharField(
+        max_length=80,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Ticket caisse",
+        help_text="Identifiant externe du logiciel de caisse (idempotence POS).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -150,6 +158,11 @@ class Invoice(models.Model):
                 fields=["organization", "monexa_ref"],
                 name="uniq_invoice_mxa_per_org",
                 condition=~models.Q(monexa_ref=""),
+            ),
+            models.UniqueConstraint(
+                fields=["organization", "pos_ticket_id"],
+                name="uniq_invoice_pos_ticket_per_org",
+                condition=~models.Q(pos_ticket_id=""),
             ),
         ]
         indexes = [
@@ -474,6 +487,43 @@ class ConnectorSync(models.Model):
 
     def __str__(self) -> str:
         return f"{self.source_id} {self.status} +{self.created_count}/skip {self.ignored_count}"
+
+
+class PosCredential(models.Model):
+    """
+    Jeton Bearer pour un logiciel de caisse.
+    Le secret en clair n'est jamais stocké — uniquement un SHA-256.
+    """
+    organization = models.ForeignKey(
+        "accounts.Organization",
+        on_delete=models.PROTECT,
+        related_name="pos_credentials",
+    )
+    name = models.CharField(max_length=80, default="Caisse")
+    channel = models.CharField(
+        max_length=20, choices=Channel.choices, default=Channel.ESPECES,
+    )
+    token_hash = models.CharField(max_length=64, unique=True)
+    token_hint = models.CharField(max_length=8, blank=True, default="")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="pos_credentials",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Jeton caisse"
+        verbose_name_plural = "Jetons caisse"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        state = "révoqué" if self.revoked_at else "actif"
+        return f"{self.name} …{self.token_hint} ({state})"
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
 
 
 class ForecastCache(models.Model):
