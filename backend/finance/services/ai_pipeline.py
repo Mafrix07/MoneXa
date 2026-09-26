@@ -120,6 +120,10 @@ def _merge_partial(base: dict, extra: dict) -> dict:
 
 def _extraction_from_partial(partial: dict) -> PaymentExtraction:
     data = dict(partial)
+    if data.get("monexa_ref") and not data.get("operator"):
+        data["operator"] = "TMONEY"
+    if data.get("monexa_ref") and not data.get("reference"):
+        data["reference"] = data["monexa_ref"]
     if not data.get("emetteur"):
         data["emetteur"] = "Payeur inconnu"
     if not data.get("date_paiement"):
@@ -133,6 +137,7 @@ def _extraction_from_partial(partial: dict) -> PaymentExtraction:
             + ", ".join(missing)
             + "). Saisissez le SMS complet ou photographiez un reçu lisible."
         )
+    data.pop("monexa_ref", None)
     return PaymentExtraction.model_validate(data)
 
 

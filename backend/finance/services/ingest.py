@@ -6,7 +6,7 @@ from django.db import transaction
 from finance.connectors.base import NormalizedTransaction
 from finance.models import Payment, PaymentStatus
 from finance.services.anomalies import detect_anomalies
-from finance.services.matcher import match_payment
+from finance.services.matcher import apply_match_to_payment
 
 
 def existing_by_ref(provider_ref: str, organization=None) -> Payment | None:
@@ -60,11 +60,7 @@ def ingest_normalized(tx: NormalizedTransaction, user, *, apply_match: bool = Tr
             payment.status = PaymentStatus.NON_RATTACHE
         payment.save()
         if apply_match and tx.direction != "OUT":
-            new_status, invoice, method = match_payment(payment)
-            payment.status = new_status
-            payment.match_method = method
-            if invoice:
-                payment.invoice = invoice
-            payment.save()
+            apply_match_to_payment(payment, user=user)
+        else:
             detect_anomalies(payment)
     return payment, True

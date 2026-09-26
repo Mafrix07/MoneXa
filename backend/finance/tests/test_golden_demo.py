@@ -10,16 +10,17 @@ from finance.models import Invoice, Payment, PaymentStatus
 
 
 GOLDEN_SMS = (
-    "Moov Money: credit 50000 FCFA de ABC Services "
-    "ID MV849321 le 25/09/2026 09:15"
+    "T-Money: Vous avez recu 50000 FCFA de ABC SARL. "
+    "Référence : MXA-8F42K7 ID TX8F42K700 le 25/09/2026 09:15"
 )
 
 
 @pytest.mark.django_db
 def test_golden_demo_sms_match_then_duplicate(caissier_client, caissier):
     call_command("seed_golden_demo")
-    inv = Invoice.objects.get(reference="FACT-2026-0001")
+    inv = Invoice.objects.get(reference="FACT-2026-00842")
     assert inv.amount == Decimal("50000")
+    assert inv.monexa_ref == "MXA-8F42K7"
 
     resp = caissier_client.post(
         "/api/evidence/",
@@ -28,10 +29,10 @@ def test_golden_demo_sms_match_then_duplicate(caissier_client, caissier):
     )
     assert resp.status_code == 201
     payment = resp.data["payment"]
-    assert payment["provider_ref"] == "MV849321"
+    assert payment["provider_ref"] == "TX8F42K700"
     assert payment["status"] in (PaymentStatus.RECONCILIE, "RECONCILIE")
     assert resp.data["explain"]["criteria"]
-    assert any(c["key"] == "amount" and c["matched"] for c in resp.data["explain"]["criteria"])
+    assert any(c["key"] == "mxa" and c["matched"] for c in resp.data["explain"]["criteria"])
 
     dup = caissier_client.post(
         "/api/evidence/",
@@ -40,11 +41,11 @@ def test_golden_demo_sms_match_then_duplicate(caissier_client, caissier):
     )
     assert dup.status_code == 409
     assert dup.data["type"] == "DUPLICATE"
-    assert Payment.objects.filter(provider_ref="MV849321").count() == 1
+    assert Payment.objects.filter(provider_ref="TX8F42K700").count() == 1
 
     dash = caissier_client.get("/api/dashboard/summary/")
     assert dash.status_code == 200
-    assert dash.data["solde_par_canal"]["MOOV"] >= 50000
+    assert dash.data["solde_par_canal"]["TMONEY"] >= 50000
 
     ask = caissier_client.post(
         "/api/assistant/ask/",

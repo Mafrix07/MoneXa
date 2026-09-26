@@ -128,15 +128,27 @@ def _parse_payer(text: str) -> Optional[str]:
 
 
 def parse_sms_text(text: str) -> dict:
-    """Champs absents = None. Aucune invention de montant / référence."""
+    """Champs absents = None. MXA extraite telle quelle, jamais inventée."""
+    from finance.services.matcher import extract_mxa_ref
+
     text = (text or "").strip()
     ref_m = _REF_LABELED.search(text) or _REF_BARE.search(text)
     reference = _normalize_ref(ref_m.group(1)) if ref_m else None
+    monexa_ref = extract_mxa_ref(text)
+    operator = detect_operator(text)
+    emetteur = _parse_payer(text)
+    if monexa_ref and not operator:
+        operator = "TMONEY"
+    if monexa_ref and not emetteur:
+        emetteur = "Payeur inconnu"
+    if monexa_ref and not reference:
+        reference = monexa_ref
     return {
         "montant": _parse_amount(text),
         "reference": reference,
-        "operator": detect_operator(text),
-        "emetteur": _parse_payer(text),
+        "monexa_ref": monexa_ref,
+        "operator": operator,
+        "emetteur": emetteur,
         "telephone_emetteur": None,
         "date_paiement": _parse_date(text),
     }

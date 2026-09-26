@@ -25,7 +25,7 @@ from finance.models import (
 from finance.services.anomalies import detect_anomalies
 from finance.services.forecast import forecast_cashflow
 from finance.services.ingest import duplicate_response, existing_by_ref
-from finance.services.matcher import explain_payment, match_payment
+from finance.services.matcher import apply_match_to_payment, explain_payment
 from finance.services.sync import sync_source
 from reporting.services import compute_kpis, explain_forecast
 
@@ -85,10 +85,7 @@ def _payments_qs(request):
 
 
 def _invoices_qs(request):
-    qs = filter_queryset_by_org(Invoice.objects.all().order_by("-issue_date"), request.user)
-    if not request.user.is_comptable_or_higher():
-        qs = qs.filter(created_by=request.user)
-    return qs
+    return filter_queryset_by_org(Invoice.objects.all().order_by("-issue_date"), request.user)
 
 
 def _spark(values, width=640, height=140):
@@ -177,7 +174,9 @@ def payment_detail(request, pk):
         audits = audits.filter(organization_id=request.user.organization_id)
     pending = []
     if request.user.is_comptable_or_higher():
-        pending = list(_invoices_qs(request).filter(status="EN_ATTENTE")[:40])
+        pending = list(
+            _invoices_qs(request).filter(status__in=["EMISE", "EN_ATTENTE", "PARTIELLEMENT_PAYEE", "EN_RETARD"])[:40]
+        )
     return render(
         request,
         "website/payment_detail.html",
@@ -202,10 +201,14 @@ def payment_review(request, pk):
         payment.status = PaymentStatus.RECONCILIE
         payment.match_method = MatchMethod.MANUEL
         payment.save(update_fields=["status", "match_method", "updated_at"])
+        if payment.invoice_id:
+            payment.invoice.recompute_from_payments()
         messages.success(request, "Rapprochement accepté.")
     elif decision in ("REJECT",):
         payment.status = PaymentStatus.ANOMALIE
         payment.save(update_fields=["status", "updated_at"])
+        if payment.invoice_id:
+            payment.invoice.recompute_from_payments()
         messages.success(request, "Rapprochement refusé — marqué en anomalie.")
     elif decision == "ATTACH":
         invoice = get_object_or_404(_invoices_qs(request), pk=request.POST.get("invoice_id"))
@@ -213,6 +216,7 @@ def payment_review(request, pk):
         payment.status = PaymentStatus.RECONCILIE
         payment.match_method = MatchMethod.MANUEL
         payment.save(update_fields=["invoice", "status", "match_method", "updated_at"])
+        invoice.recompute_from_payments()
         messages.success(request, f"Rattaché à {invoice.reference}.")
     else:
         messages.error(request, "Action non reconnue.")
@@ -373,12 +377,7 @@ def evidence(request):
                             created_by=request.user,
                         )
                         payment.save()
-                        new_status, invoice, method = match_payment(payment)
-                        payment.status = new_status
-                        payment.match_method = method
-                        if invoice:
-                            payment.invoice = invoice
-                        payment.save()
+                        apply_match_to_payment(payment, user=request.user)
                     messages.success(request, f"Preuve enregistrée ({payment.provider_ref}).")
                     return redirect("website:payment_detail", pk=payment.pk)
     return render(

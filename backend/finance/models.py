@@ -6,10 +6,12 @@ RÈGLES D'OR FINANCIÈRES (cahier des charges §6.1) :
 2. Contrainte DB unique=True sur provider_ref (anti-doublon natif)
 3. Toute écriture dans transaction.atomic()
 """
+import secrets
 from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
+from django.utils import timezone as dj_timezone
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -23,10 +25,16 @@ class Channel(models.TextChoices):
 
 
 class InvoiceStatus(models.TextChoices):
-    EN_ATTENTE = "EN_ATTENTE", "En attente"
-    RECONCILIE = "RECONCILIE", "Réconcilié"
+    BROUILLON = "BROUILLON", "Brouillon"
+    EMISE = "EMISE", "Émise"
+    EN_ATTENTE = "EN_ATTENTE", "En attente"  # historique = émise
+    PARTIELLEMENT_PAYEE = "PARTIELLEMENT_PAYEE", "Partiellement payée"
+    PAYEE = "PAYEE", "Payée"
+    EN_RETARD = "EN_RETARD", "En retard"
     ANOMALIE = "ANOMALIE", "Anomalie"
-    ANNULE = "ANNULE", "Annulé"
+    ANNULEE = "ANNULEE", "Annulée"
+    ANNULE = "ANNULE", "Annulé"  # historique
+    RECONCILIE = "RECONCILIE", "Réconcilié"  # historique
 
 
 class PaymentStatus(models.TextChoices):
@@ -37,7 +45,8 @@ class PaymentStatus(models.TextChoices):
 
 
 class MatchMethod(models.TextChoices):
-    AUTO_REF = "AUTO_REF", "Référence exacte"
+    AUTO_MXA = "AUTO_MXA", "Référence MONEXA"
+    AUTO_REF = "AUTO_REF", "Référence facture / opérateur"
     AUTO_MONTANT = "AUTO_MONTANT", "Montant + 7 jours"
     FUZZY = "FUZZY", "Fuzzy nom/téléphone"
     MANUEL = "MANUEL", "Validation manuelle"
@@ -99,6 +108,14 @@ class Invoice(models.Model):
         blank=True,
     )
     reference = models.CharField(max_length=20, db_index=True)
+    monexa_ref = models.CharField(
+        max_length=16,
+        db_index=True,
+        blank=True,
+        default="",
+        verbose_name="Référence de paiement MONEXA",
+        help_text="Identifiant court MXA-XXXXXX, distinct de FACT-* et de la réf opérateur.",
+    )
     client_name = models.CharField(max_length=200, verbose_name="Client")
     client_phone = models.CharField(max_length=20, blank=True, default="")
     amount = models.DecimalField(
@@ -107,9 +124,9 @@ class Invoice(models.Model):
     issue_date = models.DateField(verbose_name="Date d'émission")
     due_date = models.DateField(verbose_name="Date d'échéance")
     status = models.CharField(
-        max_length=20,
+        max_length=32,
         choices=InvoiceStatus.choices,
-        default=InvoiceStatus.EN_ATTENTE,
+        default=InvoiceStatus.EMISE,
         db_index=True,
     )
     created_by = models.ForeignKey(
@@ -129,10 +146,16 @@ class Invoice(models.Model):
                 fields=["organization", "reference"],
                 name="uniq_invoice_ref_per_org",
             ),
+            models.UniqueConstraint(
+                fields=["organization", "monexa_ref"],
+                name="uniq_invoice_mxa_per_org",
+                condition=~models.Q(monexa_ref=""),
+            ),
         ]
         indexes = [
             models.Index(fields=["status", "issue_date"]),
             models.Index(fields=["client_phone"]),
+            models.Index(fields=["monexa_ref"]),
         ]
 
     def __str__(self) -> str:
@@ -156,6 +179,65 @@ class Invoice(models.Model):
         else:
             seq = 1
         return f"{prefix}{seq:04d}"
+
+    @classmethod
+    def generate_monexa_ref(cls, organization=None) -> str:
+        """MXA-XXXXXX : non séquentiel, non devinable, lisible en SMS."""
+        alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        for _ in range(32):
+            body = "".join(secrets.choice(alphabet) for _ in range(6))
+            ref = f"MXA-{body}"
+            qs = cls.objects.filter(monexa_ref=ref)
+            if organization is not None:
+                qs = qs.filter(organization=organization)
+            if not qs.exists():
+                return ref
+        raise RuntimeError("Impossible de générer une référence MONEXA unique.")
+
+    OPEN_STATUSES = frozenset({
+        "BROUILLON", "EMISE", "EN_ATTENTE", "PARTIELLEMENT_PAYEE", "EN_RETARD",
+    })
+    CLOSED_STATUSES = frozenset({"ANNULEE", "ANNULE"})
+
+    def counted_payments(self):
+        from finance.models import PaymentStatus
+        return self.payments.filter(status=PaymentStatus.RECONCILIE)
+
+    def amount_paid(self) -> Decimal:
+        total = Decimal("0.00")
+        for p in self.counted_payments():
+            total += p.amount
+        return total
+
+    def amount_due(self) -> Decimal:
+        due = self.amount - self.amount_paid()
+        return due if due > 0 else Decimal("0.00")
+
+    def is_overpaid(self) -> bool:
+        return self.amount_paid() > self.amount
+
+    def recompute_from_payments(self) -> None:
+        """Met à jour statut facture selon les paiements RECONCILIE uniquement."""
+        if self.status in self.CLOSED_STATUSES:
+            return
+        paid = self.amount_paid()
+        today = dj_timezone.now().date()
+        if paid > self.amount:
+            self.status = InvoiceStatus.ANOMALIE
+        elif paid == self.amount:
+            self.status = InvoiceStatus.PAYEE
+        elif paid > 0:
+            self.status = InvoiceStatus.PARTIELLEMENT_PAYEE
+        elif self.due_date and self.due_date < today:
+            self.status = InvoiceStatus.EN_RETARD
+        else:
+            self.status = InvoiceStatus.EMISE
+        self.save(update_fields=["status", "updated_at"])
+
+    def save(self, *args, **kwargs):
+        if not self.monexa_ref:
+            self.monexa_ref = self.generate_monexa_ref(self.organization)
+        super().save(*args, **kwargs)
 
 
 class Payment(models.Model):

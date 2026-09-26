@@ -24,17 +24,14 @@ void main() {
       ),
     );
 
-    // Vérifie le logo officiel et les titres
-    expect(find.byType(Image), findsOneWidget);
+    expect(find.text('MONEXA'), findsOneWidget);
     expect(find.text('Connexion'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
 
-    // Vérifie les 3 boutons de démonstration rapide Hackathon
     expect(find.text('Caissier'), findsOneWidget);
     expect(find.text('Comptable'), findsOneWidget);
     expect(find.text('Gérant'), findsOneWidget);
 
-    // Taper sur le bouton Gérant doit préremplir l'email
     await tester.tap(find.text('Gérant'));
     await tester.pump();
 

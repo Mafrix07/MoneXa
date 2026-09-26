@@ -25,7 +25,7 @@ from .serializers import (
     FinancialSourceSerializer, ConnectorSyncSerializer,
 )
 from .services.ai_pipeline import extract_payment_from_image, extract_payment_from_text
-from .services.matcher import match_payment, explain_payment
+from .services.matcher import explain_payment, apply_match_to_payment
 from .services.anomalies import detect_anomalies
 from .services.categorize import categorize_expense
 from .services.ingest import duplicate_response, existing_by_ref, ingest_normalized
@@ -51,23 +51,19 @@ class AccountViewSet(OrgMixin, viewsets.ReadOnlyModelViewSet):
 
 class InvoiceViewSet(OrgMixin, viewsets.ModelViewSet):
     """
-    /api/invoices/ — CRUD with role-based scoping.
-
-    - CAISSIER sees own invoices, can create
-    - COMPTABLE+ sees all
+    /api/invoices/ — lecture org entière ; écriture COMPTABLE+.
     """
     queryset = Invoice.objects.all().order_by("-issue_date")
     serializer_class = InvoiceSerializer
-    permission_classes = [IsCaissierOrHigher, IsOwnerOrComptableOrHigher]
+    permission_classes = [IsCaissierOrHigher]
     filterset_fields = ["status", "client_name", "issue_date"]
-    search_fields = ["reference", "client_name", "client_phone"]
+    search_fields = ["reference", "monexa_ref", "client_name", "client_phone"]
     ordering_fields = ["issue_date", "due_date", "amount"]
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_comptable_or_higher():
-            return qs
-        return qs.filter(created_by=self.request.user)
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy", "validate_invoice"):
+            return [IsComptableOrHigher()]
+        return [IsCaissierOrHigher()]
 
     def perform_create(self, serializer):
         serializer.save(
@@ -78,10 +74,8 @@ class InvoiceViewSet(OrgMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=["patch"], url_path="validate",
             permission_classes=[IsComptableOrHigher])
     def validate_invoice(self, request, pk=None):
-        """Mark an invoice as RECONCILIE."""
         invoice = self.get_object()
-        invoice.status = "RECONCILIE"
-        invoice.save(update_fields=["status", "updated_at"])
+        invoice.recompute_from_payments()
         return Response(InvoiceSerializer(invoice).data)
 
 
@@ -113,15 +107,11 @@ class PaymentViewSet(OrgMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         with transaction.atomic():
-            payment = serializer.save(created_by=self.request.user)
-            # Run matcher immediately
-            new_status, invoice, method = match_payment(payment)
-            payment.status = new_status
-            payment.match_method = method
-            if invoice:
-                payment.invoice = invoice
-            payment.save()
-            # Audit will be handled by signal
+            payment = serializer.save(
+                created_by=self.request.user,
+                organization=self.request.user.organization,
+            )
+            apply_match_to_payment(payment, user=self.request.user)
 
     @action(detail=False, methods=["post"], url_path="evidence",
             permission_classes=[IsCaissierOrHigher])
@@ -175,14 +165,7 @@ class PaymentViewSet(OrgMixin, viewsets.ModelViewSet):
             )
             payment.evidence_image.save(image_file.name, ContentFile(image_file.read()), save=False)
             payment.save()
-
-            # Run matcher
-            new_status, invoice, method = match_payment(payment)
-            payment.status = new_status
-            payment.match_method = method
-            if invoice:
-                payment.invoice = invoice
-            payment.save()
+            apply_match_to_payment(payment, user=request.user)
 
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 
@@ -230,13 +213,7 @@ class PaymentViewSet(OrgMixin, viewsets.ModelViewSet):
                 created_by=request.user,
             )
             payment.save()
-
-            new_status, invoice, method = match_payment(payment)
-            payment.status = new_status
-            payment.match_method = method
-            if invoice:
-                payment.invoice = invoice
-            payment.save()
+            apply_match_to_payment(payment, user=request.user)
 
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 
@@ -269,6 +246,8 @@ class PaymentViewSet(OrgMixin, viewsets.ModelViewSet):
         payment.status = mapping[decision]
         payment.match_method = MatchMethod.MANUEL if mapping[decision] else payment.match_method
         payment.save(update_fields=["status", "match_method", "updated_at"])
+        if payment.invoice_id:
+            payment.invoice.recompute_from_payments()
         return Response(PaymentSerializer(payment).data)
 
     @action(detail=True, methods=["get"], url_path="explain",
@@ -311,6 +290,8 @@ class PaymentViewSet(OrgMixin, viewsets.ModelViewSet):
                 {"detail": "decision: ACCEPT, REJECT, ATTACH ou REQUEST_REVIEW."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if payment.invoice_id:
+            payment.invoice.recompute_from_payments()
         return Response({
             "payment": PaymentSerializer(payment).data,
             "explain": explain_payment(payment),

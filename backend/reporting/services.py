@@ -62,9 +62,11 @@ def compute_kpis(organization=None) -> dict[str, Any]:
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
     # ── Factures ─────────────────────────────────────────────────────
-    factures_en_attente = invoices.filter(status=InvoiceStatus.EN_ATTENTE).count()
+    factures_en_attente = invoices.filter(
+        status__in=["EMISE", "EN_ATTENTE", "PARTIELLEMENT_PAYEE", "EN_RETARD"]
+    ).count()
     factures_en_retard = invoices.filter(
-        status=InvoiceStatus.EN_ATTENTE,
+        status__in=["EMISE", "EN_ATTENTE", "PARTIELLEMENT_PAYEE", "EN_RETARD"],
         due_date__lt=now.date(),
     ).count()
 
@@ -140,7 +142,7 @@ def explain_forecast(days: int = 30, organization=None) -> dict:
     now = datetime.now(timezone.utc)
     horizon = now.date() + timedelta(days=days)
     due = Invoice.objects.filter(
-        status=InvoiceStatus.EN_ATTENTE,
+        status__in=["EMISE", "EN_ATTENTE", "PARTIELLEMENT_PAYEE", "EN_RETARD"],
         due_date__gte=now.date(),
         due_date__lte=horizon,
     )

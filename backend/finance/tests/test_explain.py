@@ -31,7 +31,7 @@ def test_high_confidence_amount_name_date(caissier):
         created_by=caissier,
     )
     status, matched, method = match_payment(payment)
-    assert status == PaymentStatus.RECONCILIE
+    assert status == PaymentStatus.A_VALIDER
     assert matched == inv
     assert method == MatchMethod.AUTO_MONTANT
     payment.invoice = matched
@@ -39,7 +39,8 @@ def test_high_confidence_amount_name_date(caissier):
     payment.match_method = method
     payment.save()
     expl = explain_payment(payment)
-    assert expl["confidence_level"] == "HIGH"
+    assert expl["confidence_level"] == "MEDIUM"
+    assert expl["confidence"] == 0.92
     by_key = {c["key"]: c["matched"] for c in expl["criteria"]}
     assert by_key["amount"] is True
     assert by_key["counterparty"] is True

@@ -38,7 +38,7 @@ def invoice(user):
 
 @pytest.mark.django_db
 def test_level_1_auto_ref(user, invoice):
-    """Niveau 1: provider_ref contient la référence de la facture → RECONCILIE."""
+    """Niveau 1: provider_ref contient FACT-* → A_VALIDER (pas d'auto sans MXA)."""
     payment = Payment.objects.create(
         provider_ref=f"TMX{invoice.reference}9999",
         amount=Decimal("100000"),
@@ -48,7 +48,7 @@ def test_level_1_auto_ref(user, invoice):
         created_by=user,
     )
     status, inv, method = match_payment(payment)
-    assert status == PaymentStatus.RECONCILIE
+    assert status == PaymentStatus.A_VALIDER
     assert inv == invoice
     assert method == MatchMethod.AUTO_REF
 

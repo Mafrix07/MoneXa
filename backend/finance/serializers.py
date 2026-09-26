@@ -18,20 +18,48 @@ class AccountSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     reference = serializers.CharField(read_only=True)
+    monexa_ref = serializers.CharField(read_only=True)
+    amount_paid = serializers.SerializerMethodField()
+    amount_due = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
         fields = [
-            "id", "reference", "client_name", "client_phone", "amount",
+            "id", "reference", "monexa_ref", "client_name", "client_phone", "amount",
+            "amount_paid", "amount_due",
             "issue_date", "due_date", "status", "status_display",
             "created_by", "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "reference", "created_by", "created_at", "updated_at"]
+        read_only_fields = [
+            "id", "reference", "monexa_ref", "amount_paid", "amount_due",
+            "created_by", "created_at", "updated_at",
+        ]
+
+    def get_amount_paid(self, obj):
+        return str(obj.amount_paid())
+
+    def get_amount_due(self, obj):
+        return str(obj.amount_due())
 
     def create(self, validated_data):
+        from auditing.services import log_action
+
         org = validated_data.get("organization")
         validated_data["reference"] = Invoice.generate_reference(organization=org)
-        return super().create(validated_data)
+        if not validated_data.get("monexa_ref"):
+            validated_data["monexa_ref"] = Invoice.generate_monexa_ref(organization=org)
+        invoice = super().create(validated_data)
+        log_action(
+            user=invoice.created_by,
+            action="REFERENCE_GENEREE",
+            entity="Invoice",
+            entity_id=invoice.id,
+            details={
+                "reference": invoice.reference,
+                "monexa_ref": invoice.monexa_ref,
+            },
+        )
+        return invoice
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -39,6 +67,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     channel_display = serializers.CharField(source="get_channel_display", read_only=True)
     match_method_display = serializers.CharField(source="get_match_method_display", read_only=True)
     invoice_reference = serializers.CharField(source="invoice.reference", read_only=True, default="")
+    invoice_monexa_ref = serializers.CharField(source="invoice.monexa_ref", read_only=True, default="")
 
     class Meta:
         model = Payment
@@ -48,7 +77,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "evidence_image", "raw_text", "ai_confidence",
             "match_method", "match_method_display",
             "status", "status_display",
-            "invoice", "invoice_reference", "anomaly_score",
+            "invoice", "invoice_reference", "invoice_monexa_ref", "anomaly_score",
             "created_by", "created_at", "updated_at",
         ]
         read_only_fields = [

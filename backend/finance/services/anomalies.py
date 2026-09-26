@@ -10,7 +10,7 @@ Détection d'anomalies hybride (cahier des charges §13.2):
    - Paiements atypiques (montant inhabituel, horaire inhabituel, canal inhabituel)
 """
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from decimal import Decimal
 
@@ -84,7 +84,28 @@ def detect_anomalies(payment: Payment) -> List[dict]:
         except Invoice.DoesNotExist:
             pass
 
-    # Rule 4 — Paiement nocturne (heuristique: entre 22h et 06h = suspect)
+    # Rule 4 — Doublon potentiel (même montant / canal, refs distinctes, < 15 min)
+    twins = Payment.objects.filter(
+        amount=payment.amount,
+        channel=payment.channel,
+        paid_at__gte=payment.paid_at - timedelta(minutes=15),
+        paid_at__lte=payment.paid_at + timedelta(minutes=15),
+    ).exclude(pk=payment.pk).exclude(provider_ref=payment.provider_ref)
+    if payment.organization_id:
+        twins = twins.filter(organization_id=payment.organization_id)
+    twin = twins.first()
+    if twin:
+        anomalies.append({
+            "severity": SEVERITY_WARNING,
+            "type": "Paiement potentiellement dupliqué",
+            "description": (
+                f"{payment.provider_ref} et {twin.provider_ref} — même montant "
+                f"{payment.amount} FCFA sur {payment.channel} en moins de 15 min"
+            ),
+            "payment_id": payment.id,
+        })
+
+    # Rule 5 — Paiement nocturne (heuristique: entre 22h et 06h = suspect)
     hour_local = payment.paid_at.hour
     if 22 <= hour_local or hour_local < 6:
         anomalies.append({
