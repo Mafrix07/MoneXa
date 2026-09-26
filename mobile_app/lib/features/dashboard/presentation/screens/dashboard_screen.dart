@@ -536,10 +536,10 @@ class _DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget bar({double h = 14}) {
+    Widget bar({double h = 14, double? w}) {
       return Container(
         height: h,
-        width: w,
+        width: w ?? double.infinity,
         decoration: BoxDecoration(
           color: AppColors.border,
           borderRadius: BorderRadius.circular(8),

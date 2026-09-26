@@ -109,3 +109,31 @@ def test_caissier_creates_and_loads_invoice(client, gerant):
     detail = client.get(reverse("website:invoice_detail", args=[inv.pk]))
     assert detail.status_code == 200
     assert inv.monexa_ref.encode() in detail.content
+
+
+@pytest.mark.django_db
+def test_duplicate_extraction_flash_is_danger(client, gerant):
+    from decimal import Decimal
+    from django.utils import timezone as dj_timezone
+    from finance.models import Channel, Payment
+
+    sms = "Moov Money: credit 50000 FCFA de ABC Services ID MV849321 le 25/09/2026 09:15"
+    Payment.objects.create(
+        organization=gerant.organization,
+        provider_ref="MV849321",
+        amount=Decimal("50000"),
+        channel=Channel.MOOV,
+        payer_name="ABC Services",
+        paid_at=dj_timezone.now(),
+        created_by=gerant,
+    )
+    client.force_login(gerant)
+    resp = client.post(
+        reverse("website:evidence"),
+        {"text": sms, "confirm": "1"},
+        follow=True,
+    )
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "Doublon potentiel" in body
+    assert "mx-flash--danger" in body

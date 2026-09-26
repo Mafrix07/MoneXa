@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="{% static 'website/css/monexa-app.css' %}?v=7" rel="stylesheet">
+  <link href="{% static 'website/css/monexa-app.css' %}?v=8" rel="stylesheet">
 </head>
 <body class="mx-app">
   <a class="mx-skip" href="#contenu">Aller au contenu</a>
@@ -107,7 +107,10 @@
       <main id="contenu" class="mx-content">
         {% if messages %}
           {% for message in messages %}
-          <div class="mx-card" role="status" style="margin-bottom:1rem">{{ message }}</div>
+          <div
+            class="mx-flash{% if 'error' in message.tags %} mx-flash--danger{% elif 'success' in message.tags %} mx-flash--ok{% endif %}"
+            role="{% if 'error' in message.tags %}alert{% else %}status{% endif %}"
+          >{{ message }}</div>
           {% endfor %}
         {% endif %}
         {% block content %}{% endblock %}

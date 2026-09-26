@@ -318,6 +318,25 @@ textarea.mx-input { min-height: 120px; }
 }
 .mx-alert--danger { border-left-color: var(--monexa-danger); }
 
+.mx-flash {
+  margin-bottom: 1rem;
+  border-radius: var(--mx-radius);
+  padding: 1rem 1.1rem;
+  font-weight: 650;
+  border: 1px solid var(--monexa-border);
+  background: var(--monexa-surface);
+}
+.mx-flash--danger {
+  background: #b42318;
+  border-color: #7a160f;
+  color: #fff;
+}
+.mx-flash--ok {
+  background: rgba(15, 107, 69, 0.12);
+  border-color: rgba(15, 107, 69, 0.28);
+  color: var(--monexa-success);
+}
+
 .mx-chat {
   display: flex; flex-direction: column; min-height: 52vh;
 }
